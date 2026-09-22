@@ -1,56 +1,58 @@
 # Ko-fi Autonomy Bridge
 
-Minimal webhook receiver and first execution layer for the economic autonomy experiment.
+Minimal execution layer for an economic autonomy experiment.
 
-## Current architecture
+## Architecture
 
-Ko-fi payment/event
-→ /api/kofi-webhook
+Payment/event
 → verified normalized event
-→ /api/opportunity
-→ product/job workflow
+→ opportunity analysis
+→ job specification
 → delivery
 → measurement
-→ iteration
+→ next experiment
 
 ## Endpoints
 
 - GET /api/health
 - POST /api/kofi-webhook
 - POST /api/opportunity
+- GET /api/strategy
+
+## Current business hypothesis
+
+The initial paid-product hypothesis is a €7.90 personalized digital pet portrait. It is deliberately treated as an experiment, not as the final business.
+
+The system now also exposes a multi-model strategy layer covering:
+- narrow AI/B2B services
+- digital products
+- original content + affiliate/commerce
+- original AI-assisted YouTube
+- niche ecommerce/dropshipping
+- pet-owner digital/service utilities
+- active investing
+
+The purpose is not to assume one model wins. It is to run cheap, measurable tests and reallocate effort according to evidence.
+
+## Capital rule
+
+Investment capital is not required for the first phase. Do not provide exchange passwords, seed phrases, private keys, API secrets, or account credentials through chat.
+
+If investing is later evaluated, start with research, paper trading/backtesting and explicit risk limits before considering real capital.
 
 ## Vercel environment variables
 
-- KOFI_VERIFICATION_TOKEN — required; set this to the verification token shown by Ko-fi.
+- KOFI_VERIFICATION_TOKEN — required for Ko-fi webhook verification.
 - AUTOMATION_TARGET_URL — optional HTTPS endpoint for forwarding verified events.
 
 Never put secrets in GitHub or send them through chat.
 
-## Current product hypothesis
+## Next stages
 
-Personalized digital pet portrait:
-- €7.90
-- digital delivery
-- square + vertical formats
-- one revision
-- target turnaround: 48 hours
-
-This is a test hypothesis, not a claim of validated demand.
-
-## Deployment
-
-Import this repository into Vercel and deploy. After deployment, configure the Ko-fi webhook to:
-
-https://YOUR-VERCEL-DOMAIN.vercel.app/api/kofi-webhook
-
-Then add the Ko-fi verification token as the Vercel environment variable.
-
-## Next autonomous stages
-
-1. Capture verified events.
-2. Persist event/outcome data.
-3. Test the product offer.
-4. Automate intake and job creation.
-5. Deliver the purchased asset.
-6. Measure conversion, delivery time, refunds and feedback.
-7. Generate the next opportunity hypothesis from the observed data.
+1. Add durable event/outcome storage.
+2. Add experiment and funnel metrics.
+3. Build a small real-world validation surface.
+4. Measure demand.
+5. Compare hypotheses using observed evidence.
+6. Automate fulfillment where economically justified.
+7. Replace weak hypotheses instead of defending them.
