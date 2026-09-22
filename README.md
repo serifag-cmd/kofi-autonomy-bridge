@@ -1,8 +1,34 @@
-# Ko-fi Autonomy Bridge
+# EVEREST — Economic Engine
 
-Minimal execution layer for an economic autonomy experiment.
+Execution layer for an open-ended human + AI economic capability experiment.
 
-## Architecture
+## Objective
+
+Money is a **measurement instrument**, not the mission.
+
+The mission is to discover and build the maximum economic capability that can be demonstrated with real-world evidence while progressively reducing human intervention per unit of value created.
+
+There is **no monetary ceiling**. €1B is retained only as a stress-reference scale, not as a forecast, promise, or final objective.
+
+## Operating loop
+
+Observe
+→ research
+→ discover problems
+→ formulate hypotheses
+→ build the minimum viable solution
+→ launch
+→ capture real signal
+→ fulfil
+→ measure
+→ iterate or kill
+→ automate
+→ scale only after evidence
+→ identify the next constraint.
+
+The system should change architecture as scale changes rather than assuming that the first business model remains the final one.
+
+## Current architecture
 
 Payment/event
 → verified normalized event
@@ -10,49 +36,44 @@ Payment/event
 → job specification
 → delivery
 → measurement
-→ next experiment
+→ next experiment.
 
-## Endpoints
+## Current hypothesis
 
-- GET /api/health
-- POST /api/kofi-webhook
-- POST /api/opportunity
-- GET /api/strategy
+The first implementation explores AI-assisted workflow automation for service businesses that receive enquiries and appointments.
 
-## Current business hypothesis
+Current pilot hypothesis:
+- €250 setup
+- €299/month after a useful pilot
 
-The initial paid-product hypothesis is a €7.90 personalized digital pet portrait. It is deliberately treated as an experiment, not as the final business.
+These are test prices, not predictions.
 
-The system now also exposes a multi-model strategy layer covering:
-- narrow AI/B2B services
-- digital products
-- original content + affiliate/commerce
-- original AI-assisted YouTube
-- niche ecommerce/dropshipping
-- pet-owner digital/service utilities
-- active investing
+A previous €7.90 personalized pet portrait experiment remains part of the history of the system and may be revisited only if evidence makes it useful.
 
-The purpose is not to assume one model wins. It is to run cheap, measurable tests and reallocate effort according to evidence.
+## Research signal
+
+Current 2026 evidence supports investigating workflow-level AI applications rather than treating generic chatbots as the end product. The European Commission reports that AI adoption among SMEs remains materially below large enterprises, while its agentic-AI work describes a shift toward coordinated, goal-driven systems. OECD reporting also notes that SMEs are experimenting with tailored applications and AI agents, while secure operational integration remains uneven.
+
+This evidence does **not** validate our specific offer. It only establishes that the problem space is worth testing.
 
 ## Capital rule
 
-Investment capital is not required for the first phase. Do not provide exchange passwords, seed phrases, private keys, API secrets, or account credentials through chat.
+Do not use capital merely to compensate for weak validation.
 
-If investing is later evaluated, start with research, paper trading/backtesting and explicit risk limits before considering real capital.
+Prefer experiments that can produce a real market signal with minimal fixed cost. If an experiment requires capital, define the maximum loss and the evidence threshold before spending it.
 
-## Vercel environment variables
+Never provide exchange passwords, seed phrases, private keys, API secrets, or account credentials through chat.
 
-- KOFI_VERIFICATION_TOKEN — required for Ko-fi webhook verification.
-- AUTOMATION_TARGET_URL — optional HTTPS endpoint for forwarding verified events.
+## Human intervention
 
-Never put secrets in GitHub or send them through chat.
+The assistant should perform every step supported by available tools. Human action is reserved for steps that genuinely require identity, consent, account authorization, physical-world action, or another unavailable capability.
 
-## Next stages
+## Next engineering priorities
 
-1. Add durable event/outcome storage.
-2. Add experiment and funnel metrics.
-3. Build a small real-world validation surface.
-4. Measure demand.
-5. Compare hypotheses using observed evidence.
-6. Automate fulfillment where economically justified.
-7. Replace weak hypotheses instead of defending them.
+1. Durable event and outcome storage.
+2. Reliable funnel and experiment metrics.
+3. Real intake surface instead of the current placeholder CTA.
+4. Verified deployment and end-to-end health check.
+5. Controlled real-world pilot.
+6. Automated experiment comparison and kill/continue decisions.
+7. Expand the opportunity-discovery layer.
