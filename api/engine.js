@@ -50,9 +50,12 @@ export default function handler(req, res) {
     mission: {
       name: "EVEREST",
       horizon_days: 180,
-      stretch_target_eur: 1000000,
-      primary_objective: "build_a_repeatable_economic_engine",
-      rule: "real payments and measurable outcomes outrank opinions"
+      stretch_target: "no_ceiling",
+      stress_reference_eur: 1000000000,
+      monetary_role: "scale_indicator_not_objective",
+      primary_objective: "discover_and_build_the_maximum_demonstrable_economic_capability",
+      operating_principle: "objective_over_procedure",
+      truth_rule: "real_payments_and_measurable_outcomes_outrank_opinions"
     },
     selected_experiment: CANDIDATES[0],
     human_intervention: [
@@ -61,9 +64,19 @@ export default function handler(req, res) {
       "provide secrets only through secure service settings, never in chat"
     ],
     engine_loop: [
-      "discover","formulate_offer","build_minimum_version","launch_test",
-      "capture_real_signal","fulfil","measure","iterate_or_kill",
-      "scale_only_after_evidence"
+      "observe",
+      "research",
+      "discover",
+      "formulate_offer",
+      "build_minimum_version",
+      "launch_test",
+      "capture_real_signal",
+      "fulfil",
+      "measure",
+      "iterate_or_kill",
+      "automate",
+      "scale_only_after_evidence",
+      "search_for_the_next_constraint"
     ]
   });
 }
