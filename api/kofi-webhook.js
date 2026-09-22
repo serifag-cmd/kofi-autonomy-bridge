@@ -30,6 +30,23 @@ function normalize(payload) {
   };
 }
 
+async function forward(target, event) {
+  if (!target) return { attempted: false, ok: true };
+  if (!target.startsWith("https://")) {
+    return { attempted: true, ok: false, error: "automation_target_must_use_https" };
+  }
+  try {
+    const response = await fetch(target, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(event)
+    });
+    return { attempted: true, ok: response.ok, status: response.status };
+  } catch {
+    return { attempted: true, ok: false, error: "automation_target_unreachable" };
+  }
+}
+
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     res.setHeader("Allow", "POST");
@@ -46,21 +63,16 @@ export default async function handler(req, res) {
   }
 
   const event = normalize(payload);
-  const target = process.env.AUTOMATION_TARGET_URL;
+  const forwarding = await forward(process.env.AUTOMATION_TARGET_URL, event);
 
-  if (target) {
-    if (!target.startsWith("https://")) {
-      return res.status(500).json({ ok: false, error: "automation_target_must_use_https" });
-    }
-    const response = await fetch(target, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify(event)
-    });
-    if (!response.ok) {
-      return res.status(502).json({ ok: false, error: "automation_target_failed", status: response.status });
-    }
+  if (!forwarding.ok) {
+    return res.status(502).json({ ok: false, error: forwarding.error || "automation_target_failed", status: forwarding.status });
   }
 
-  return res.status(200).json({ ok: true, received: true, event });
+  return res.status(200).json({
+    ok: true,
+    received: true,
+    forwarded: forwarding.attempted,
+    event
+  });
 }
