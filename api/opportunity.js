@@ -39,6 +39,22 @@ function createJobSpec(event) {
   };
 }
 
+function nextExperiment(signal, event) {
+  if (signal.value) {
+    return {
+      type: "fulfillment_and_learning",
+      objective: "Complete the paid job and collect evidence for iteration.",
+      metrics: ["payment_confirmed", "delivery_time_hours", "revision_count", "feedback"]
+    };
+  }
+
+  return {
+    type: "demand_test",
+    objective: "Generate a measurable real-world payment signal.",
+    metrics: ["visits", "clicks", "payments", "conversion_rate"]
+  };
+}
+
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     res.setHeader("Allow", "POST");
@@ -55,6 +71,7 @@ export default async function handler(req, res) {
     signal,
     product: PRODUCT,
     job,
+    next_experiment: nextExperiment(signal, event),
     next_actions: signal.value
       ? [
           "verify_event",
