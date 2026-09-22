@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://serifag-cmd.github.io/kofi-autonomy-bridge/sitemap.xml
