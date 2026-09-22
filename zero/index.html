@@ -3,85 +3,76 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Freelancer Rescue Kit — EVEREST ZERO</title>
-<meta name="description" content="Free practical calculators and generators for freelancers and small operators.">
+<title>Freelancer Rescue Kit — free tools for freelancers</title>
+<meta name="description" content="Free browser tools for freelancers and small operators: hourly rate, project quote, scope creep, runway and client follow-ups.">
+<meta name="robots" content="index,follow">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"Freelancer Rescue Kit","applicationCategory":"BusinessApplication","operatingSystem":"Web","offers":{"@type":"Offer","price":"0","priceCurrency":"EUR"},"description":"Free practical browser tools for freelancers and small operators."}</script>
 <style>
 :root{font-family:system-ui,-apple-system,Segoe UI,sans-serif;color:#17202a;background:#f5f1ea}
-body{max-width:980px;margin:0 auto;padding:28px 18px}
-header{padding:24px 0 10px}
-h1{font-size:clamp(2rem,6vw,4rem);line-height:1;margin:.1em 0}
-p{line-height:1.55;color:#46515c}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px}
+body{max-width:1080px;margin:0 auto;padding:24px 16px 60px}
+header{padding:30px 0 18px}h1{font-size:clamp(2.1rem,7vw,4.7rem);line-height:.98;margin:.1em 0}
+p{line-height:1.55;color:#46515c}.lead{max-width:720px;font-size:1.08rem}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(275px,1fr));gap:16px}
 .card{background:#fff;border:1px solid #ddd6cc;border-radius:18px;padding:20px;box-shadow:0 6px 20px rgba(0,0,0,.04)}
 label{display:block;font-size:.9rem;margin:12px 0 5px}
-input,textarea,button{width:100%;box-sizing:border-box;padding:11px 12px;border-radius:10px;border:1px solid #cfc7bc;font:inherit}
+input,button{width:100%;box-sizing:border-box;padding:11px 12px;border-radius:10px;border:1px solid #cfc7bc;font:inherit}
 button{cursor:pointer;background:#17202a;color:#fff;border-color:#17202a;margin-top:12px}
-.out{margin-top:12px;padding:12px;background:#f3eee6;border-radius:10px;white-space:pre-wrap}
-.small{font-size:.88rem;color:#66717b}
-footer{padding:30px 0;text-align:center}
+.secondary{background:#fff;color:#17202a}.out{margin-top:12px;padding:12px;background:#f3eee6;border-radius:10px;white-space:pre-wrap}
+.small{font-size:.88rem;color:#66717b}.tag{display:inline-block;padding:6px 10px;border-radius:999px;background:#e8e1d7;font-size:.78rem;margin-right:5px}
+footer{padding:30px 0;text-align:center}.notice{border-left:4px solid #17202a;padding-left:12px}
 </style>
 </head>
 <body>
 <header>
 <div class="small">EVEREST ZERO · autonomous economic experiment</div>
+<div style="margin-top:10px"><span class="tag">free</span><span class="tag">no signup</span><span class="tag">browser-only</span></div>
 <h1>Freelancer Rescue Kit</h1>
-<p>A small set of free tools for people who sell their time, projects or expertise. No signup required.</p>
+<p class="lead">Small tools for people who sell time, projects or expertise. Calculate what to charge, estimate project value, recover stalled enquiries and make the economics visible.</p>
+<p class="notice small">Useful first. Monetization second. The tools run locally in your browser; no account is required.</p>
 </header>
-
 <section class="grid">
-<article class="card">
-<h2>Minimum hourly rate</h2>
-<p>Estimate the hourly rate needed to reach a target monthly income after non-billable time.</p>
+<article class="card"><h2>Minimum hourly rate</h2><p>Estimate the billable rate required to hit a monthly income target after non-billable time.</p>
 <label>Target monthly income (€)<input id="income" type="number" value="2000" min="0"></label>
 <label>Working hours / month<input id="hours" type="number" value="160" min="1"></label>
 <label>Billable share (%)<input id="billable" type="number" value="60" min="1" max="100"></label>
-<button onclick="rate()">Calculate</button>
-<div class="out" id="rateOut"></div>
-</article>
-
-<article class="card">
-<h2>Follow-up message</h2>
-<p>Turn a stalled enquiry into a concise follow-up.</p>
+<button onclick="rate()">Calculate</button><div class="out" id="rateOut"></div></article>
+<article class="card"><h2>Project quote</h2><p>Turn estimated work, risk and desired margin into a simple project quote.</p>
+<label>Hours<input id="qhours" type="number" value="20" min="0"></label>
+<label>Internal hourly value (€)<input id="qrate" type="number" value="50" min="0"></label>
+<label>Risk / revision buffer (%)<input id="buffer" type="number" value="20" min="0"></label>
+<label>Target margin (%)<input id="margin" type="number" value="20" min="0" max="95"></label>
+<button onclick="quote()">Calculate</button><div class="out" id="quoteOut"></div></article>
+<article class="card"><h2>Scope-creep cost</h2><p>Make unplanned extra work visible before it becomes invisible unpaid labour.</p>
+<label>Hourly value (€)<input id="value" type="number" value="50" min="0"></label>
+<label>Extra hours<input id="extra" type="number" value="4" min="0"></label>
+<button onclick="scope()">Calculate</button><div class="out" id="scopeOut"></div></article>
+<article class="card"><h2>Runway</h2><p>Estimate how many months a cash reserve covers at your current burn.</p>
+<label>Cash reserve (€)<input id="cash" type="number" value="3000" min="0"></label>
+<label>Monthly fixed costs (€)<input id="burn" type="number" value="1200" min="1"></label>
+<label>Expected monthly variable costs (€)<input id="variable" type="number" value="300" min="0"></label>
+<button onclick="runway()">Calculate</button><div class="out" id="runwayOut"></div></article>
+<article class="card"><h2>Client follow-up</h2><p>Generate a short, human-sounding follow-up for a stalled enquiry.</p>
 <label>Client name<input id="client" placeholder="Alex"></label>
 <label>Project / service<input id="project" placeholder="Website redesign"></label>
 <label>Days since reply<input id="days" type="number" value="3" min="1"></label>
-<button onclick="follow()">Generate</button>
-<div class="out" id="followOut"></div>
-</article>
-
-<article class="card">
-<h2>Scope-creep calculator</h2>
-<p>Estimate the value of unplanned extra work.</p>
-<label>Hourly value (€)<input id="value" type="number" value="50" min="0"></label>
-<label>Extra hours<input id="extra" type="number" value="4" min="0"></label>
-<button onclick="scope()">Calculate</button>
-<div class="out" id="scopeOut"></div>
-</article>
+<button onclick="follow()">Generate</button><div class="out" id="followOut"></div><button class="secondary" onclick="copyText('followOut')">Copy message</button></article>
+<article class="card"><h2>Late-invoice message</h2><p>Generate a polite payment reminder without writing it from scratch.</p>
+<label>Client name<input id="debtor" placeholder="Sam"></label>
+<label>Invoice number<input id="invoice" placeholder="INV-1042"></label>
+<label>Days overdue<input id="overdue" type="number" value="7" min="1"></label>
+<button onclick="late()">Generate</button><div class="out" id="lateOut"></div><button class="secondary" onclick="copyText('lateOut')">Copy message</button></article>
 </section>
-
-<footer>
-<p class="small">Built as an experiment. Useful first; monetization second. Results are generated locally in your browser.</p>
-</footer>
-
+<footer><p class="small">EVEREST ZERO experiment · version 0.1 · Results are estimates, not financial advice.</p></footer>
 <script>
-function n(id){return Number(document.getElementById(id).value)||0}
-function rate(){
- const income=n('income'),hours=n('hours'),share=n('billable')/100;
- const billable=hours*share, r=billable?income/billable:0;
- document.getElementById('rateOut').textContent='Estimated minimum billable rate: €'+r.toFixed(2)+'/hour';
-}
-function follow(){
- const c=document.getElementById('client').value.trim()||'there';
- const p=document.getElementById('project').value.trim()||'the project';
- const d=n('days');
- document.getElementById('followOut').textContent=
- 'Hi '+c+', just following up on '+p+'. I wanted to check whether you had any questions or would like me to keep this moving. I’m happy to adapt the next step to your timing. — '+d+' days since my last message.';
-}
-function scope(){
- const total=n('value')*n('extra');
- document.getElementById('scopeOut').textContent='Estimated unplanned work value: €'+total.toFixed(2);
-}
-rate();
+const n=id=>Number(document.getElementById(id).value)||0;
+function rate(){const b=n('hours')*(n('billable')/100);document.getElementById('rateOut').textContent=b?'Minimum billable rate: €'+(n('income')/b).toFixed(2)+'/hour':'Enter a valid billable share.'}
+function quote(){const base=n('qhours')*n('qrate'),buffered=base*(1+n('buffer')/100),divisor=Math.max(.05,1-n('margin')/100);document.getElementById('quoteOut').textContent='Suggested project price: €'+(buffered/divisor).toFixed(2)+'\nBase work: €'+base.toFixed(2)+'\nRisk buffer: €'+(buffered-base).toFixed(2)}
+function scope(){document.getElementById('scopeOut').textContent='Unplanned work value: €'+(n('value')*n('extra')).toFixed(2)}
+function runway(){const m=n('burn')+n('variable');document.getElementById('runwayOut').textContent=m?'Estimated runway: '+(n('cash')/m).toFixed(1)+' months':'Enter a monthly cost.'}
+function follow(){const c=document.getElementById('client').value.trim()||'there',p=document.getElementById('project').value.trim()||'the project',d=n('days');document.getElementById('followOut').textContent='Hi '+c+', just following up on '+p+'. I wanted to check whether you had any questions or would like me to keep this moving. I’m happy to adapt the next step to your timing. — '+d+' days since my last message.'}
+function late(){const c=document.getElementById('debtor').value.trim()||'there',i=document.getElementById('invoice').value.trim()||'the invoice',d=n('overdue');document.getElementById('lateOut').textContent='Hi '+c+', a quick reminder that invoice '+i+' is currently '+d+' days overdue. Could you let me know when I can expect payment? Thanks.'}
+function copyText(id){const t=document.getElementById(id).textContent;navigator.clipboard?.writeText(t)}
+rate();quote();scope();runway();
 </script>
 </body>
 </html>
