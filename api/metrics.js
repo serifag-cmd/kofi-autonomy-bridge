@@ -3,6 +3,8 @@ const ALLOWED = new Set([
   "payment","delivery","refund","renewal","feedback","failure"
 ]);
 
+import { persistEvent } from "./_lib/persist.js";
+
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     res.setHeader("Allow", "POST");
@@ -24,6 +26,8 @@ export default async function handler(req, res) {
     metadata: body.metadata || {}
   };
 
+  const storage = await persistEvent(event, "metrics");
+
   const target = process.env.AUTOMATION_TARGET_URL;
   let forwarded = false;
   if (target && target.startsWith("https://")) {
@@ -40,8 +44,12 @@ export default async function handler(req, res) {
   res.status(200).json({
     ok: true,
     event,
-    persisted: false,
+    persisted: storage.persisted,
+    storage_configured: storage.configured,
     forwarded,
-    note: "Stateless endpoint: configure durable storage before treating metrics as authoritative."
+    authoritative: storage.persisted,
+    note: storage.persisted
+      ? "Event persisted to durable storage."
+      : "Configure SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY with the provided SQL schema before treating metrics as authoritative."
   });
 }
