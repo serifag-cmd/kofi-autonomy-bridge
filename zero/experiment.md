@@ -21,15 +21,16 @@ It has six utilities:
 - runway
 - client follow-up
 - late-invoice message
+- share action for distributing the tool
 
 ## Provisional public test route
-Git-Forge HTML Preview provides a browser-rendered preview of a GitHub HTML file. The route below points to an immutable commit so the tested build cannot silently change:
+Git-Forge HTML Preview provides a browser-rendered preview of a GitHub HTML file. The route below points to the latest immutable build commit:
 
-https://html-preview.github.io/?url=https://github.com/serifag-cmd/kofi-autonomy-bridge/blob/572c2b1dd799859ae51fa401c4b1cdf204194624/public/zero.html
+https://html-preview.github.io/?url=https://github.com/serifag-cmd/kofi-autonomy-bridge/blob/4e133eb112a53648c86485856ec5e8e52fab5f21/public/zero.html
 
 A second CDN-style route has also been recorded:
 
-https://raw.githack.com/serifag-cmd/kofi-autonomy-bridge/572c2b1dd799859ae51fa401c4b1cdf204194624/public/zero.html
+https://raw.githack.com/serifag-cmd/kofi-autonomy-bridge/4e133eb112a53648c86485856ec5e8e52fab5f21/public/zero.html
 
 These are test-access routes, not yet the canonical production host.
 
