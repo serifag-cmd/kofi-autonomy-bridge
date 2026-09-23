@@ -1,6 +1,6 @@
 # EVEREST ZERO — Experiment Log
 
-Status: build complete / canonical public deployment pending.
+Status: build complete / provisional public test route available / canonical production deployment pending.
 
 ## Product
 Freelancer Rescue Kit — free browser utilities for freelancers and small operators.
@@ -23,9 +23,15 @@ It has six utilities:
 - late-invoice message
 
 ## Provisional public test route
-The repository's HTML can be rendered through raw.githack using an immutable commit URL.
-This is a test-access route, not yet the canonical production host:
+Git-Forge HTML Preview provides a browser-rendered preview of a GitHub HTML file. The route below points to an immutable commit so the tested build cannot silently change:
+
+https://html-preview.github.io/?url=https://github.com/serifag-cmd/kofi-autonomy-bridge/blob/572c2b1dd799859ae51fa401c4b1cdf204194624/public/zero.html
+
+A second CDN-style route has also been recorded:
+
 https://raw.githack.com/serifag-cmd/kofi-autonomy-bridge/572c2b1dd799859ae51fa401c4b1cdf204194624/public/zero.html
+
+These are test-access routes, not yet the canonical production host.
 
 ## Monetization sequence
 1. Validate actual use.
