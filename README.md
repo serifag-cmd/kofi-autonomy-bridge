@@ -95,6 +95,10 @@ Never provide exchange passwords, seed phrases, private keys, API secrets, or ac
 
 The assistant should perform every step supported by available tools. Human action is reserved for steps that genuinely require identity, consent, account authorization, physical-world action, or another unavailable capability.
 
+## Current launch state
+
+The paid product is packaged in English and Spanish and the Ko-fi listing copy/checklist is stored under sales/. The Ko-fi webhook is ready to persist verified payment events once durable storage is connected. The public production host remains blocked by deployment authorization rather than by application code.
+
 ## Next engineering priorities
 
 1. Durable event and outcome storage.
