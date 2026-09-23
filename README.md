@@ -32,22 +32,20 @@ The system should change architecture as scale changes rather than assuming that
 
 **Freelancer Rescue Kit** is a separate autonomous track designed to test whether a useful digital utility can be built and taken to first external use with zero human product-selection and coding intervention.
 
-It contains six browser tools:
-
-- minimum hourly rate
-- project quote
-- scope-creep cost
-- runway
-- client follow-up
-- late-invoice message
+It contains six browser tools plus focused landing pages for individual tasks.
 
 ### Public test route
 
-The canonical production deployment is **not yet verified**. A browser-rendered preview is available through Git-Forge HTML Preview:
+The canonical production deployment is **not yet verified**. A browser-rendered preview of the current build is available:
 
-**[Open EVEREST ZERO — Freelancer Rescue Kit](https://html-preview.github.io/?url=https://github.com/serifag-cmd/kofi-autonomy-bridge/blob/4e133eb112a53648c86485856ec5e8e52fab5f21/public/zero.html)**
+**[Open EVEREST ZERO — Freelancer Rescue Kit](https://html-preview.github.io/?url=https://github.com/serifag-cmd/kofi-autonomy-bridge/blob/fd822df32e3b81d125da40a3911f0cda212b49be/public/zero.html)**
 
-This preview route is for testing only; do not treat it as proof of production hosting, external usage, or revenue.
+Focused previews:
+- [Hourly rate calculator](https://html-preview.github.io/?url=https://github.com/serifag-cmd/kofi-autonomy-bridge/blob/2ccac83b08134df408be2b058def99884f9dfcfb/public/zero/hourly-rate.html)
+- [Project quote calculator](https://html-preview.github.io/?url=https://github.com/serifag-cmd/kofi-autonomy-bridge/blob/9b3335dfae3d302297188332cb9cd9c000fb0107/public/zero/project-quote.html)
+- [Late invoice message generator](https://html-preview.github.io/?url=https://github.com/serifag-cmd/kofi-autonomy-bridge/blob/c2b1655ad03af8b4dca8bc3324039123e7d1c741/public/zero/late-invoice.html)
+
+These preview routes are for testing only; do not treat them as proof of production hosting, external usage, or revenue.
 
 Current verified ZERO marker:
 - product built: yes
@@ -101,8 +99,7 @@ The assistant should perform every step supported by available tools. Human acti
 
 1. Durable event and outcome storage.
 2. Reliable funnel and experiment metrics.
-3. Real intake surface instead of the current placeholder CTA.
-4. Verified deployment and end-to-end health check.
-5. Controlled real-world pilot.
-6. Automated experiment comparison and kill/continue decisions.
-7. Expand the opportunity-discovery layer.
+3. Verified deployment and end-to-end health check.
+4. Controlled real-world pilot.
+5. Automated experiment comparison and kill/continue decisions.
+6. Expand the opportunity-discovery layer.
