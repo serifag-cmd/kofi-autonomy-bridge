@@ -5,34 +5,33 @@ Status: build complete / provisional public test route available / canonical pro
 ## Product
 Freelancer Rescue Kit — free browser utilities for freelancers and small operators.
 
-## Why this first
-- Can be built without proprietary data.
-- No user account required.
-- Immediate utility can be tested before monetization.
-- Low marginal cost.
-- Product can expand into a library of narrowly targeted tools.
-
 ## Current build
-The main branch contains a self-contained browser build at `public/zero.html`.
-It has six utilities:
+The main branch contains a self-contained browser build at `public/zero.html`, plus focused pages for hourly rate, project quote and late-invoice reminders.
+
+The main kit now includes:
 - minimum hourly rate
 - project quote
 - scope-creep cost
 - runway
 - client follow-up
 - late-invoice message
-- share action for distributing the tool
+- share action
+- links to focused versions of the highest-intent utilities
 
 ## Provisional public test route
-Git-Forge HTML Preview provides a browser-rendered preview of a GitHub HTML file. The route below points to the latest immutable build commit:
+The current immutable main build can be rendered through Git-Forge HTML Preview:
 
-https://html-preview.github.io/?url=https://github.com/serifag-cmd/kofi-autonomy-bridge/blob/4e133eb112a53648c86485856ec5e8e52fab5f21/public/zero.html
+https://html-preview.github.io/?url=https://github.com/serifag-cmd/kofi-autonomy-bridge/blob/fd822df32e3b81d125da40a3911f0cda212b49be/public/zero.html
 
-A second CDN-style route has also been recorded:
+Focused routes:
+- https://html-preview.github.io/?url=https://github.com/serifag-cmd/kofi-autonomy-bridge/blob/2ccac83b08134df408be2b058def99884f9dfcfb/public/zero/hourly-rate.html
+- https://html-preview.github.io/?url=https://github.com/serifag-cmd/kofi-autonomy-bridge/blob/9b3335dfae3d302297188332cb9cd9c000fb0107/public/zero/project-quote.html
+- https://html-preview.github.io/?url=https://github.com/serifag-cmd/kofi-autonomy-bridge/blob/c2b1655ad03af8b4dca8bc3324039123e7d1c741/public/zero/late-invoice.html
 
-https://raw.githack.com/serifag-cmd/kofi-autonomy-bridge/4e133eb112a53648c86485856ec5e8e52fab5f21/public/zero.html
+These are test-access routes, not the canonical production host.
 
-These are test-access routes, not yet the canonical production host.
+## Measurement policy
+No visit, user, payment, conversion or revenue is counted unless it is externally verifiable.
 
 ## Monetization sequence
 1. Validate actual use.
