@@ -1,81 +1,33 @@
 <!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Freelancer Rescue Kit — EVEREST ZERO</title>
 <meta name="description" content="Free browser tools for freelancers and small operators: pricing, quotes, scope creep, runway and client messages.">
 <meta property="og:title" content="Freelancer Rescue Kit — EVEREST ZERO">
 <meta property="og:description" content="Six free browser utilities for freelancers and small operators. No signup.">
 <meta name="theme-color" content="#17202a">
-<style>
-body{font-family:system-ui,-apple-system,Segoe UI,sans-serif;max-width:960px;margin:auto;padding:20px;background:#f5f1ea;color:#17202a}
-h1{font-size:clamp(2.2rem,8vw,5rem);line-height:.95;margin:.15em 0}
-h2{margin:.2em 0 .7em}
-.g{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
-.c{background:white;padding:18px;border-radius:16px;border:1px solid #ddd;box-shadow:0 3px 12px rgba(0,0,0,.04)}
-input,button{width:100%;padding:12px;margin:5px 0;box-sizing:border-box;font:inherit;border-radius:9px}
-input{border:1px solid #cfd3d6}
-button{background:#17202a;color:white;border:0;cursor:pointer}
-button.secondary{background:#e7e2da;color:#17202a}
-.o{background:#eee7dd;padding:11px;margin-top:8px;white-space:pre-wrap;border-radius:9px;min-height:1.2em}
-.s{color:#5d6670}
-.hero{padding:8px 0 18px}
-.actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;max-width:520px}
-.note{font-size:.92rem}
-@media(max-width:520px){.actions{grid-template-columns:1fr}}
-</style>
-</head>
-<body>
-<header class="hero">
-<p class="s">EVEREST ZERO · autonomous economic experiment</p>
-<h1>Freelancer Rescue Kit</h1>
+<style>body{font-family:system-ui,-apple-system,Segoe UI,sans-serif;max-width:960px;margin:auto;padding:20px;background:#f5f1ea;color:#17202a}h1{font-size:clamp(2.2rem,8vw,5rem);line-height:.95;margin:.15em 0}.g{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}.c{background:white;padding:18px;border-radius:16px;border:1px solid #ddd;box-shadow:0 3px 12px rgba(0,0,0,.04)}input,button{width:100%;padding:12px;margin:5px 0;box-sizing:border-box;font:inherit;border-radius:9px}input{border:1px solid #cfd3d6}button{background:#17202a;color:white;border:0;cursor:pointer}.secondary{background:#e7e2da;color:#17202a}.o{background:#eee7dd;padding:11px;margin-top:8px;white-space:pre-wrap;border-radius:9px;min-height:1.2em}.s{color:#5d6670}.actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;max-width:520px}.quick a{display:block;padding:10px 0;color:#17202a}.note{font-size:.92rem}@media(max-width:520px){.actions{grid-template-columns:1fr}}</style>
+</head><body>
+<header><p class="s">EVEREST ZERO · autonomous economic experiment</p><h1>Freelancer Rescue Kit</h1>
 <p>Free, browser-only utilities for people who sell time, projects or expertise.</p>
-<div class="actions">
-<button class="secondary" onclick="shareKit()">Share this kit</button>
-<button class="secondary" onclick="window.scrollTo({top:document.body.scrollHeight,behavior:'smooth'})">Jump to tools</button>
-</div>
-<p class="note s">No signup. Nothing is uploaded by these calculators.</p>
-</header>
+<div class="actions"><button class="secondary" onclick="shareKit()">Share this kit</button><button class="secondary" onclick="window.scrollTo({top:document.body.scrollHeight,behavior:'smooth'})">Jump to tools</button></div>
+<p class="note s">No signup. Calculator inputs stay in your browser.</p></header>
 
-<main class="g">
-<section class="c"><h2>Minimum hourly rate</h2>
-<input id="i" type="number" value="2000" placeholder="Target income/month" aria-label="Target income per month">
-<input id="h" type="number" value="160" placeholder="Hours/month" aria-label="Hours per month">
-<input id="b" type="number" value="60" placeholder="Billable %" aria-label="Billable percentage">
-<button onclick="r()">Calculate</button><div class="o" id="ro"></div></section>
+<section class="c quick"><h2>Focused tools</h2>
+<a href="https://html-preview.github.io/?url=https://github.com/serifag-cmd/kofi-autonomy-bridge/blob/2ccac83b08134df408be2b058def99884f9dfcfb/public/zero/hourly-rate.html">→ Minimum hourly rate calculator</a>
+<a href="https://html-preview.github.io/?url=https://github.com/serifag-cmd/kofi-autonomy-bridge/blob/9b3335dfae3d302297188332cb9cd9c000fb0107/public/zero/project-quote.html">→ Project quote calculator</a>
+<a href="https://html-preview.github.io/?url=https://github.com/serifag-cmd/kofi-autonomy-bridge/blob/c2b1655ad03af8b4dca8bc3324039123e7d1c741/public/zero/late-invoice.html">→ Late invoice message generator</a>
+</section>
 
-<section class="c"><h2>Project quote</h2>
-<input id="qh" type="number" value="20" placeholder="Hours" aria-label="Project hours">
-<input id="qr" type="number" value="50" placeholder="Hourly value" aria-label="Hourly value">
-<input id="rb" type="number" value="20" placeholder="Risk buffer %" aria-label="Risk buffer percentage">
-<input id="m" type="number" value="20" placeholder="Margin %" aria-label="Margin percentage">
-<button onclick="q()">Calculate</button><div class="o" id="qo"></div></section>
-
-<section class="c"><h2>Scope creep</h2>
-<input id="v" type="number" value="50" placeholder="Hourly value" aria-label="Hourly value">
-<input id="e" type="number" value="4" placeholder="Extra hours" aria-label="Extra hours">
-<button onclick="s()">Calculate</button><div class="o" id="so"></div></section>
-
-<section class="c"><h2>Runway</h2>
-<input id="c" type="number" value="3000" placeholder="Cash" aria-label="Cash">
-<input id="f" type="number" value="1200" placeholder="Fixed/month" aria-label="Fixed monthly costs">
-<input id="x" type="number" value="300" placeholder="Variable/month" aria-label="Variable monthly costs">
-<button onclick="w()">Calculate</button><div class="o" id="wo"></div></section>
-
-<section class="c"><h2>Client follow-up</h2>
-<input id="n" placeholder="Client name" aria-label="Client name">
-<input id="p" placeholder="Project/service" aria-label="Project or service">
-<button onclick="fu()">Generate</button><div class="o" id="fo"></div></section>
-
-<section class="c"><h2>Late invoice</h2>
-<input id="d" placeholder="Client name" aria-label="Client name">
-<input id="iv" placeholder="Invoice number" aria-label="Invoice number">
-<button onclick="li()">Generate</button><div class="o" id="lo"></div></section>
+<main class="g" style="margin-top:14px">
+<section class="c"><h2>Minimum hourly rate</h2><input id="i" type="number" value="2000" placeholder="Target income/month"><input id="h" type="number" value="160" placeholder="Hours/month"><input id="b" type="number" value="60" placeholder="Billable %"><button onclick="r()">Calculate</button><div class="o" id="ro"></div></section>
+<section class="c"><h2>Project quote</h2><input id="qh" type="number" value="20" placeholder="Hours"><input id="qr" type="number" value="50" placeholder="Hourly value"><input id="rb" type="number" value="20" placeholder="Risk buffer %"><input id="m" type="number" value="20" placeholder="Margin %"><button onclick="q()">Calculate</button><div class="o" id="qo"></div></section>
+<section class="c"><h2>Scope creep</h2><input id="v" type="number" value="50" placeholder="Hourly value"><input id="e" type="number" value="4" placeholder="Extra hours"><button onclick="s()">Calculate</button><div class="o" id="so"></div></section>
+<section class="c"><h2>Runway</h2><input id="c" type="number" value="3000" placeholder="Cash"><input id="f" type="number" value="1200" placeholder="Fixed/month"><input id="x" type="number" value="300" placeholder="Variable/month"><button onclick="w()">Calculate</button><div class="o" id="wo"></div></section>
+<section class="c"><h2>Client follow-up</h2><input id="n" placeholder="Client name"><input id="p" placeholder="Project/service"><button onclick="fu()">Generate</button><div class="o" id="fo"></div></section>
+<section class="c"><h2>Late invoice</h2><input id="d" placeholder="Client name"><input id="iv" placeholder="Invoice number"><button onclick="li()">Generate</button><div class="o" id="lo"></div></section>
 </main>
-
 <p class="s note">Useful first. Monetization second. Estimates only; not financial advice.</p>
-
 <script>
 const z=x=>+document.getElementById(x).value||0;
 function r(){let x=z('h')*z('b')/100;ro.textContent=x?'Minimum rate: €'+(z('i')/x).toFixed(2)+'/hour':'Enter valid values'}
@@ -84,16 +36,6 @@ function s(){so.textContent='Unplanned work value: €'+(z('v')*z('e')).toFixed(
 function w(){let x=z('f')+z('x');wo.textContent=x?'Estimated runway: '+(z('c')/x).toFixed(1)+' months':'Enter costs'}
 function fu(){fo.textContent='Hi '+(n.value||'there')+', just following up on '+(p.value||'the project')+'. Do you have any questions or would you like me to keep this moving?'}
 function li(){lo.textContent='Hi '+(d.value||'there')+', a quick reminder regarding invoice '+(iv.value||'the invoice')+'. Could you let me know when payment is expected? Thanks.'}
-async function shareKit(){
-  const title='Freelancer Rescue Kit — EVEREST ZERO';
-  const url='https://html-preview.github.io/?url=https://github.com/serifag-cmd/kofi-autonomy-bridge/blob/572c2b1dd799859ae51fa401c4b1cdf204194624/public/zero.html';
-  try{
-    if(navigator.share){await navigator.share({title,text:'Six free browser tools for freelancers and small operators.',url});return}
-    await navigator.clipboard.writeText(url);
-    alert('Share link copied.');
-  }catch(e){}
-}
+async function shareKit(){const title='Freelancer Rescue Kit — EVEREST ZERO',url='https://html-preview.github.io/?url=https://github.com/serifag-cmd/kofi-autonomy-bridge/blob/4cb43113dee47871e22513049fa500e34a7311e3/public/zero.html';try{if(navigator.share){await navigator.share({title,text:'Six free browser tools for freelancers and small operators.',url});return}await navigator.clipboard.writeText(url);alert('Share link copied.')}catch(e){}}
 r();q();s();w();
-</script>
-</body>
-</html>
+</script></body></html>
