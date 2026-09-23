@@ -45,7 +45,7 @@ It contains six browser tools:
 
 The canonical production deployment is **not yet verified**. A browser-rendered preview is available through Git-Forge HTML Preview:
 
-**[Open EVEREST ZERO — Freelancer Rescue Kit](https://html-preview.github.io/?url=https://github.com/serifag-cmd/kofi-autonomy-bridge/blob/572c2b1dd799859ae51fa401c4b1cdf204194624/public/zero.html)**
+**[Open EVEREST ZERO — Freelancer Rescue Kit](https://html-preview.github.io/?url=https://github.com/serifag-cmd/kofi-autonomy-bridge/blob/4e133eb112a53648c86485856ec5e8e52fab5f21/public/zero.html)**
 
 This preview route is for testing only; do not treat it as proof of production hosting, external usage, or revenue.
 
