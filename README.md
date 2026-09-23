@@ -28,6 +28,35 @@ Observe
 
 The system should change architecture as scale changes rather than assuming that the first business model remains the final one.
 
+## EVEREST ZERO — public experiment
+
+**Freelancer Rescue Kit** is a separate autonomous track designed to test whether a useful digital utility can be built and taken to first external use with zero human product-selection and coding intervention.
+
+It contains six browser tools:
+
+- minimum hourly rate
+- project quote
+- scope-creep cost
+- runway
+- client follow-up
+- late-invoice message
+
+### Public test route
+
+The canonical production deployment is **not yet verified**. A browser-rendered preview is available through Git-Forge HTML Preview:
+
+**[Open EVEREST ZERO — Freelancer Rescue Kit](https://html-preview.github.io/?url=https://github.com/serifag-cmd/kofi-autonomy-bridge/blob/572c2b1dd799859ae51fa401c4b1cdf204194624/public/zero.html)**
+
+This preview route is for testing only; do not treat it as proof of production hosting, external usage, or revenue.
+
+Current verified ZERO marker:
+- product built: yes
+- human product selection: 0
+- human coding: 0
+- verified external users: 0
+- verified revenue: €0
+- canonical production deployment: pending verification
+
 ## Current architecture
 
 Payment/event
@@ -38,7 +67,7 @@ Payment/event
 → measurement
 → next experiment.
 
-## Current hypothesis
+## Current HUMAN+AI hypothesis
 
 The first implementation explores AI-assisted workflow automation for service businesses that receive enquiries and appointments.
 
