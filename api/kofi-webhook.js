@@ -1,4 +1,5 @@
 import crypto from "node:crypto";
+import { persistEvent } from "./_lib/persist.js";
 
 function safeEqual(a, b) {
   const aa = Buffer.from(String(a || ""));
@@ -15,18 +16,22 @@ function parseBody(req) {
 }
 
 function normalize(payload) {
+  const amount = Number(payload.Amount ?? payload.amount);
   return {
-    received_at: new Date().toISOString(),
-    message_id: payload.MessageID ?? payload.message_id ?? null,
-    timestamp: payload.Timestamp ?? payload.timestamp ?? null,
-    type: payload.Type ?? payload.type ?? null,
-    from_name: payload.From ?? payload.from_name ?? null,
-    email: payload.Email ?? payload.email ?? null,
-    amount: payload.Amount ?? payload.amount ?? null,
-    currency: payload.Currency ?? payload.currency ?? null,
-    url: payload.URL ?? payload.url ?? null,
-    shop_items: payload.ShopItems ?? payload.shop_items ?? null,
-    raw: payload
+    id: payload.MessageID ?? payload.message_id ?? crypto.randomUUID(),
+    type: "payment",
+    experiment_id: "everest-zero-rescue-kit",
+    amount_eur: Number.isFinite(amount) ? amount : null,
+    occurred_at: payload.Timestamp ?? payload.timestamp ?? new Date().toISOString(),
+    metadata: {
+      from_name: payload.From ?? payload.from_name ?? null,
+      email: payload.Email ?? payload.email ?? null,
+      currency: payload.Currency ?? payload.currency ?? null,
+      url: payload.URL ?? payload.url ?? null,
+      shop_items: payload.ShopItems ?? payload.shop_items ?? null,
+      message_id: payload.MessageID ?? payload.message_id ?? null,
+      kofi_type: payload.Type ?? payload.type ?? null
+    }
   };
 }
 
@@ -63,15 +68,23 @@ export default async function handler(req, res) {
   }
 
   const event = normalize(payload);
+  const storage = await persistEvent(event, "kofi");
   const forwarding = await forward(process.env.AUTOMATION_TARGET_URL, event);
 
   if (!forwarding.ok) {
-    return res.status(502).json({ ok: false, error: forwarding.error || "automation_target_failed", status: forwarding.status });
+    return res.status(502).json({
+      ok: false,
+      error: forwarding.error || "automation_target_failed",
+      status: forwarding.status,
+      persisted: storage.persisted
+    });
   }
 
   return res.status(200).json({
     ok: true,
     received: true,
+    persisted: storage.persisted,
+    storage_configured: storage.configured,
     forwarded: forwarding.attempted,
     event
   });
