@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>EVEREST Node Core</title>
+<style>
+:root{--bg:#0b0d10;--panel:#13171c;--panel2:#0f1317;--text:#f2f4f7;--muted:#9aa4af;--line:#242b33;--ok:#7ee787;--warn:#f2cc60;--accent:#8ab4ff}
+*{box-sizing:border-box}body{margin:0;background:linear-gradient(180deg,#0b0d10,#0a0c0f);color:var(--text);font:15px/1.5 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
+header{position:sticky;top:0;z-index:2;background:rgba(11,13,16,.94);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);padding:14px}
+.wrap{max-width:1100px;margin:auto;padding:16px}
+.brand{display:flex;align-items:center;justify-content:space-between;gap:12px}.brand h1{font-size:20px;margin:0}.sub{color:var(--muted);font-size:12px}
+.badge{padding:6px 9px;border:1px solid var(--line);border-radius:999px;font-size:12px}.safe{color:var(--ok)}
+nav{display:flex;gap:8px;overflow:auto;padding-top:12px}nav button,.btn{background:#171c22;color:var(--text);border:1px solid var(--line);border-radius:10px;padding:9px 12px;cursor:pointer}nav button.active{border-color:#4b5866;background:#1d242c}
+.grid{display:grid;grid-template-columns:repeat(12,1fr);gap:12px}.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px}.span4{grid-column:span 4}.span6{grid-column:span 6}.span8{grid-column:span 8}.span12{grid-column:span 12}
+.metric{font-size:28px;font-weight:700}.label{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.06em}
+.kv{display:flex;justify-content:space-between;gap:10px;border-bottom:1px solid var(--line);padding:8px 0}.kv:last-child{border-bottom:0}
+.status{display:inline-flex;align-items:center;gap:6px}.dot{width:8px;height:8px;border-radius:50%;background:var(--ok)}.dot.warn{background:var(--warn)}
+.log{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;white-space:pre-wrap;background:var(--panel2);padding:10px;border-radius:10px;border:1px solid var(--line)}
+.hidden{display:none}.small{font-size:12px;color:var(--muted)}.pill{display:inline-block;padding:4px 7px;border:1px solid var(--line);border-radius:8px;margin:3px 3px 0 0;font-size:12px}
+@media(max-width:760px){.span4,.span6,.span8{grid-column:span 12}.wrap{padding:12px}.brand{align-items:flex-start}.metric{font-size:24px}}
+</style>
+</head>
+<body>
+<header><div class="wrap" style="padding-top:0;padding-bottom:0">
+<div class="brand"><div><h1>EVEREST Node Core</h1><div class="sub">Control plane · safe by default · no external side effects</div></div><div class="badge safe">SAFE MODE: ON</div></div>
+<nav id="nav"></nav>
+</div></header>
+<main class="wrap">
+<section id="dashboard" class="view">
+<div class="grid">
+<div class="card span4"><div class="label">Mission</div><div class="metric">EVEREST ZERO</div><div class="small">Build verifiable economic capability while reducing human intervention per unit of value.</div></div>
+<div class="card span4"><div class="label">Active experiment</div><div class="metric">First Sale</div><div class="small">Freelancer Rescue Kit · €9.90 · verified revenue remains €0 until a real payment is recorded.</div></div>
+<div class="card span4"><div class="label">System state</div><div class="metric status"><span class="dot"></span>Healthy</div><div class="small">Local state only. No credentialed adapters configured.</div></div>
+
+<div class="card span6"><h3>Priority loop</h3><div class="kv"><span>Observe</span><b>Acquisition signal</b></div><div class="kv"><span>Act</span><b>First-sale experiments</b></div><div class="kv"><span>Measure</span><b>Clicks → purchase</b></div><div class="kv"><span>Decide</span><b>Iterate / kill / automate</b></div></div>
+<div class="card span6"><h3>Human bridge</h3><div class="kv"><span>Required now</span><b>Only service authentication / consent</b></div><div class="kv"><span>Never automated blindly</span><b>Secrets, legal consent, real-money confirmation</b></div><div class="kv"><span>Audit standard</span><b>No fabricated outcomes</b></div></div>
+</div>
+</section>
+
+<section id="experiments" class="view hidden"><div class="grid">
+<div class="card span8"><h3>Experiments</h3><div class="kv"><span>everest-zero-rescue-kit</span><span class="pill">ACTIVE</span></div><div class="kv"><span>First-sale funnel</span><span class="pill">PRIMARY</span></div><div class="kv"><span>Scope-creep decision moment</span><span class="pill">ACQUISITION</span></div><div class="kv"><span>Late-invoice rescue</span><span class="pill">ACQUISITION</span></div></div>
+<div class="card span4"><h3>Evidence</h3><div class="metric">€0</div><div class="small">Verified revenue</div><div class="metric" style="margin-top:10px">0</div><div class="small">Verified sales</div></div>
+</div></section>
+
+<section id="opportunities" class="view hidden"><div class="grid"><div class="card span12"><h3>Opportunity queue</h3>
+<div class="kv"><span>Freelancer scope creep / unpaid revisions</span><span class="pill">HIGH-INTENT</span></div>
+<div class="kv"><span>Late invoices / follow-up</span><span class="pill">HIGH-INTENT</span></div>
+<div class="kv"><span>Underquoting / minimum rate</span><span class="pill">HIGH-INTENT</span></div>
+<p class="small">Opportunities are hypotheses until external evidence is collected and measured.</p></div></div></section>
+
+<section id="products" class="view hidden"><div class="grid"><div class="card span12"><h3>Product catalog</h3>
+<div class="kv"><span>Freelancer Rescue Kit</span><b>€9.90</b></div>
+<div class="kv"><span>Delivery</span><b>Digital · EN + ES</b></div>
+<div class="kv"><span>State</span><b>Experimental</b></div>
+<div class="kv"><span>Ko-fi</span><b>Alternative channel</b></div>
+</div></div></section>
+
+<section id="actions" class="view hidden"><div class="grid"><div class="card span12"><h3>Auditable action log</h3><div id="log"></div></div></div></section>
+
+<section id="system" class="view hidden"><div class="grid">
+<div class="card span6"><h3>Capabilities</h3><div class="kv"><span>Web research</span><span class="status"><span class="dot"></span>Available via host</span></div><div class="kv"><span>GitHub</span><span class="status"><span class="dot"></span>Connected separately</span></div><div class="kv"><span>Payments</span><span class="status"><span class="dot warn"></span>Unconfigured</span></div><div class="kv"><span>External browser</span><span class="status"><span class="dot warn"></span>Safe / unconfigured</span></div><div class="kv"><span>Persistent database</span><span class="status"><span class="dot warn"></span>Unconfigured</span></div></div>
+<div class="card span6"><h3>Permissions</h3><div class="kv"><span>Read / observe</span><b>Allowed</b></div><div class="kv"><span>Write source</span><b>Explicit tool action</b></div><div class="kv"><span>Real-money side effects</span><b>Human-controlled</b></div><div class="kv"><span>Secrets</span><b>Never stored in UI</b></div></div>
+</div></section>
+
+<section id="memory" class="view hidden"><div class="grid"><div class="card span12"><h3>Decision memory</h3><p>Core principle: <b>reality is the judge</b>. Build → expose → measure → learn. Capacity is not evidence.</p><div class="log">Current decision: prioritize first-sale evidence over feature expansion.
+Current blocker: Ko-fi availability must be human-corrected because automated interaction is not permitted.
+Fallback architecture: small node core before deeper integrations.</div></div></div></section>
+
+<section id="health" class="view hidden"><div class="grid"><div class="card span12"><h3>Health</h3><div class="kv"><span>UI</span><b id="health-ui">PASS</b></div><div class="kv"><span>Local state</span><b id="health-storage">CHECKING</b></div><div class="kv"><span>External services</span><b>SAFE / NOT CONFIGURED</b></div><button class="btn" onclick="runHealth()">Run health check</button></div></div></section>
+</main>
+<script>
+const tabs=[["dashboard","Dashboard"],["experiments","Experiments"],["opportunities","Opportunities"],["products","Products"],["actions","Actions"],["system","System"],["memory","Memory"],["health","Health"]];
+const nav=document.getElementById("nav");
+tabs.forEach(([id,label],i)=>{const b=document.createElement("button");b.textContent=label;b.onclick=()=>show(id);if(i===0)b.classList.add("active");nav.appendChild(b)});
+function show(id){document.querySelectorAll(".view").forEach(x=>x.classList.add("hidden"));document.getElementById(id).classList.remove("hidden");[...nav.children].forEach((b,i)=>b.classList.toggle("active",tabs[i][0]===id));logAction("view:"+id)}
+function load(){let state;try{state=JSON.parse(localStorage.getItem("everestNodeState")||"null")}catch{};if(!state){state={events:[],createdAt:new Date().toISOString()};localStorage.setItem("everestNodeState",JSON.stringify(state))}window.nodeState=state;renderLog();runHealth()}
+function logAction(action){const e={at:new Date().toISOString(),action,state:"recorded",result:"local-only",humanRequired:false};window.nodeState.events=[...(window.nodeState.events||[]),e].slice(-40);localStorage.setItem("everestNodeState",JSON.stringify(window.nodeState));renderLog()}
+function renderLog(){const box=document.getElementById("log");box.innerHTML=(window.nodeState?.events||[]).slice().reverse().map(e=>'<div class="log" style="margin-bottom:8px">'+new Date(e.at).toLocaleString()+' | '+e.action+' | '+e.state+' | '+e.result+'</div>').join("")||'<div class="small">No actions recorded yet.</div>'}
+function runHealth(){let ok=false;try{const k="everestHealth";localStorage.setItem(k,"ok");ok=localStorage.getItem(k)==="ok"}catch{}document.getElementById("health-storage").textContent=ok?"PASS":"FAIL";logAction("health-check");}
+load();
+</script>
+</body>
+</html>
