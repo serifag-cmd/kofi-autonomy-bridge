@@ -1,0 +1,15 @@
+{
+  "expo": {
+    "name": "DALMA Adventure",
+    "slug": "dalma-adventure",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "newArchEnabled": true,
+    "android": {
+      "package": "com.opencacnlabs.dalmaadventure",
+      "versionCode": 1
+    },
+    "assetBundlePatterns": ["**/*"]
+  }
+}
