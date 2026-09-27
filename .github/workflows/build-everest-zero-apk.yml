@@ -3,6 +3,7 @@ name: Build EVEREST ZERO APK
 on:
   push:
     branches:
+      - everest-zero
       - everest-zero-apk
   pull_request:
     branches:
