@@ -15,3 +15,6 @@ Build target:
 
 
 Build pipeline validation marker: EVEREST ZERO APK delivery.
+
+
+Automatic APK build trigger: base workflow is active.
