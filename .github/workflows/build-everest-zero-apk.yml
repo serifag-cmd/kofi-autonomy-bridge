@@ -4,6 +4,12 @@ on:
   push:
     branches:
       - everest-zero-apk
+  pull_request:
+    branches:
+      - everest-zero
+    paths:
+      - 'android/**'
+      - '.github/workflows/build-everest-zero-apk.yml'
   workflow_dispatch:
 
 jobs:
