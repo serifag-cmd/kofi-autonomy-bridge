@@ -12,3 +12,6 @@ Build target:
 - minSdk: 24
 - targetSdk: 35
 - debug APK: app/build/outputs/apk/debug/app-debug.apk
+
+
+Build pipeline validation marker: EVEREST ZERO APK delivery.
