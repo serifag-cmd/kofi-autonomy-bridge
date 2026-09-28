@@ -6,6 +6,7 @@ import android.content.SharedPreferences;
 import android.graphics.*;
 import android.view.*;
 import java.util.Random;
+import java.util.Arrays;
 
 public class MainActivity extends Activity {
     @Override public void onCreate(Bundle state) {
