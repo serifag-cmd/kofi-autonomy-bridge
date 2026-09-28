@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
 concurrency:
   group: dalma-investor-demo
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 permissions:
   contents: write
