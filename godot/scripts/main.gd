@@ -88,6 +88,10 @@ var world_panel: ColorRect
 var route_points: Array[Vector3] = []
 var tile_nodes: Array[Node3D] = []
 var building_nodes: Array[Node3D] = []
+var world_decorations: Array[Node3D] = []
+var world_ring: MeshInstance3D
+var world_core: MeshInstance3D
+var world_light: OmniLight3D
 var world_ring: MeshInstance3D
 var world_core: MeshInstance3D
 var world_light: OmniLight3D
@@ -181,6 +185,7 @@ func _build_world() -> void:
     route_points.append(Vector3(cos(a) * radius, 0.18, sin(a) * radius))
   _create_board_geometry()
   _create_world_center()
+  _build_world_decorations(0)
 
 func _create_board_geometry() -> void:
   var floor := MeshInstance3D.new()
@@ -250,7 +255,7 @@ func _create_world_center() -> void:
   world_core.position.y = 1.65
   world_core.material_override = _emissive_mat(worlds[0]["color"],1.7)
   board_root.add_child(world_core)
-  var ring := MeshInstance3D.new()
+  world_ring = MeshInstance3D.new()
   var torus := TorusMesh.new()
   torus.inner_radius = 1.45
   torus.outer_radius = 1.58
@@ -793,6 +798,104 @@ func _rebuild_world_buildings()->void:
     label.position.y=1.70+0.15*level
     label.outline_size=8
     root.add_child(label)
+
+
+func _build_world_decorations(world_idx:int)->void:
+  for n in world_decorations:
+    if is_instance_valid(n): n.queue_free()
+  world_decorations.clear()
+  var w=worlds[world_idx]
+  for i in 12:
+    var root:=Node3D.new()
+    var a:=float(i)/12.0*TAU
+    var r:=11.3+float(i%3)*1.25
+    root.position=Vector3(cos(a)*r,0.0,sin(a)*r)
+    root.rotation.y=a
+    board_root.add_child(root)
+    world_decorations.append(root)
+    var accent:Color=w["color"]
+    match world_idx:
+      0:
+        var b:=MeshInstance3D.new()
+        var bm:=BoxMesh.new()
+        bm.size=Vector3(0.65,1.2+0.15*(i%3),0.65)
+        b.mesh=bm
+        b.position.y=bm.size.y/2.0
+        b.material_override=_mat(accent.darkened(0.42),0.48,0.14)
+        root.add_child(b)
+      1:
+        var p:=MeshInstance3D.new()
+        var pm:=PrismMesh.new()
+        pm.size=Vector3(0.7,1.2+0.22*(i%4),0.7)
+        p.mesh=pm
+        p.position.y=pm.size.y/2.0
+        p.rotation_degrees=Vector3(0,45,8)
+        p.material_override=_emissive_mat(accent,0.8)
+        root.add_child(p)
+      2:
+        for j in 3:
+          var coral:=MeshInstance3D.new()
+          var cm:=CapsuleMesh.new()
+          cm.radius=0.12+0.03*j
+          cm.height=0.8+0.18*j
+          coral.mesh=cm
+          coral.position=Vector3((j-1)*0.28,cm.height/2.0,0)
+          coral.rotation_degrees=Vector3(0,(j-1)*12,(j-1)*10)
+          coral.material_override=_mat(accent.darkened(0.1+0.08*j),0.62,0.05)
+          root.add_child(coral)
+      3:
+        var lava:=MeshInstance3D.new()
+        var lm:=CylinderMesh.new()
+        lm.top_radius=0.16
+        lm.bottom_radius=0.48
+        lm.height=1.4+0.18*(i%3)
+        lava.mesh=lm
+        lava.position.y=lm.height/2.0
+        lava.material_override=_mat(Color("#321A16"),0.44,0.16)
+        root.add_child(lava)
+        var glow:=MeshInstance3D.new()
+        var gm:=SphereMesh.new()
+        gm.radius=0.18
+        gm.height=0.36
+        glow.mesh=gm
+        glow.position.y=lm.height*0.64
+        glow.material_override=_emissive_mat(accent,2.0)
+        root.add_child(glow)
+      4:
+        var neon:=MeshInstance3D.new()
+        var nm:=BoxMesh.new()
+        nm.size=Vector3(0.18,1.8+0.12*(i%3),0.18)
+        neon.mesh=nm
+        neon.position.y=nm.size.y/2.0
+        neon.material_override=_emissive_mat(accent,1.5)
+        root.add_child(neon)
+      5:
+        var sh:=MeshInstance3D.new()
+        var sm:=BoxMesh.new()
+        sm.size=Vector3(0.72,1.5+0.1*(i%4),0.72)
+        sh.mesh=sm
+        sh.position.y=sm.size.y/2.0
+        sh.rotation_degrees=Vector3(0,17,7)
+        sh.material_override=_mat(Color("#15151D"),0.80,0.0)
+        root.add_child(sh)
+      6:
+        var orb:=MeshInstance3D.new()
+        var om:=SphereMesh.new()
+        om.radius=0.18
+        om.height=0.36
+        orb.mesh=om
+        orb.position.y=1.45
+        orb.material_override=_emissive_mat(accent,2.2)
+        root.add_child(orb)
+        var loop:=MeshInstance3D.new()
+        var tm:=TorusMesh.new()
+        tm.inner_radius=0.5
+        tm.outer_radius=0.56
+        loop.mesh=tm
+        loop.position.y=1.45
+        loop.rotation.x=PI/2.0
+        loop.material_override=_emissive_mat(accent,1.2)
+        root.add_child(loop)
 
 func _refresh_ui()->void:
   var w=worlds[int(g["world"])]
