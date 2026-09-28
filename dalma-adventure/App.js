@@ -18,7 +18,7 @@ const INITIAL = { energy:8, coins:1250, shields:2, relics:14, level:1, xp:18, po
 
 function DalmaHero(){
   return <View style={styles.dalmaHero}>
-    <Image source={require("./assets/dalma-hero.png")} style={styles.dalmaImage} resizeMode="contain"/>
+    <Image source={require("./assets/dalma-hero.webp")} style={styles.dalmaImage} resizeMode="contain"/>
     <View style={styles.heroBadgeWrap}><Text style={styles.heroBadge}>DALMA • GENESIS</Text></View>
   </View>
 }
