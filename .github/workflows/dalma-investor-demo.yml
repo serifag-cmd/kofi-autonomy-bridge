@@ -1,0 +1,118 @@
+name: DALMA Investor Demo Android Build
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/dalma-investor-demo.yml"
+      - "DALMA_BUILD_TRIGGER"
+
+permissions:
+  contents: read
+
+jobs:
+  build-verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Checkout bridge repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android platform/build tools
+        run: |
+          yes | sdkmanager --licenses >/dev/null || true
+          sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0"
+
+      - name: Download canonical DALMA source
+        env:
+          SOURCE_URL: "https://uc5e6d257143ad8abfa1b96da971.dl.dropboxusercontent.com/cd/0/get/DI8OIxK2J59nH8uOJdgfPrFMXjJhgJLZQGoeXNbrWBGL4p-keazWSGqA7IPaY6aWeG1HlzbocpO7-mM8i2Dl2-LKuKbsckCCv-Wzqa3soT7ZbUuMTj862nqiCTRAjdmyezPon9WhDJq7nwulHMc5-qzt18N5V88GszEvfGX65fG3Pg/file?c_luid=9c24a1ab"
+        run: |
+          curl -fL --retry 3 --retry-all-errors "$SOURCE_URL" -o dalma-source.zip
+          test -s dalma-source.zip
+          unzip -tq dalma-source.zip
+          mkdir -p source
+          unzip -q dalma-source.zip -d source
+
+      - name: Locate Android Gradle project
+        id: locate
+        shell: bash
+        run: |
+          set -euo pipefail
+          GRADLEW="$(find source -type f -name gradlew -print -quit)"
+          if [ -z "$GRADLEW" ]; then
+            echo "No gradlew found in canonical DALMA source archive."
+            find source -maxdepth 4 -type f | sort | head -200
+            exit 1
+          fi
+          ROOT="$(dirname "$GRADLEW")"
+          echo "root=$ROOT" >> "$GITHUB_OUTPUT"
+          chmod +x "$GRADLEW"
+          echo "Using Gradle project at: $ROOT"
+
+      - name: Build release APK from source
+        working-directory: ${{ steps.locate.outputs.root }}
+        run: ./gradlew assembleRelease --no-daemon --stacktrace
+
+      - name: Locate and validate APK
+        id: apk
+        shell: bash
+        working-directory: ${{ steps.locate.outputs.root }}
+        run: |
+          set -euo pipefail
+          APK="$(find . -type f -name '*.apk' | grep -E '/(release|outputs/apk/)' | sort | tail -1 || true)"
+          if [ -z "$APK" ]; then
+            APK="$(find . -type f -name '*.apk' | sort | tail -1 || true)"
+          fi
+          if [ -z "$APK" ]; then
+            echo "No APK produced."
+            exit 1
+          fi
+          ABS="$(realpath "$APK")"
+          SIZE="$(stat -c%s "$ABS")"
+          echo "APK=$ABS"
+          echo "SIZE=$SIZE"
+          test "$SIZE" -gt 50000000
+          file "$ABS" | grep -qi "zip"
+          unzip -tq "$ABS" >/dev/null
+          "${ANDROID_HOME}/build-tools/35.0.0/apksigner" verify --verbose "$ABS"
+          PACKAGE="$("${ANDROID_HOME}/build-tools/35.0.0/aapt" dump badging "$ABS" | sed -n "s/package: name='\\([^']*\\)'.*/\\1/p" | head -1)"
+          VERSION="$("${ANDROID_HOME}/build-tools/35.0.0/aapt" dump badging "$ABS" | sed -n "s/package: name='[^']*' versionCode='\\([^']*\\)' versionName='\\([^']*\\)'.*/\\1|\\2/p" | head -1)"
+          test -n "$PACKAGE"
+          mkdir -p "${GITHUB_WORKSPACE}/verified-output"
+          cp "$ABS" "${GITHUB_WORKSPACE}/verified-output/DALMA_Investor_Demo.apk"
+          SHA="$(sha256sum "${GITHUB_WORKSPACE}/verified-output/DALMA_Investor_Demo.apk" | awk '{print $1}')"
+          printf 'apk=%s\nbytes=%s\nsha256=%s\npackage=%s\nversion=%s\n' "$ABS" "$SIZE" "$SHA" "$PACKAGE" "$VERSION" > "${GITHUB_WORKSPACE}/verified-output/verification.txt"
+          echo "apk_path=${GITHUB_WORKSPACE}/verified-output/DALMA_Investor_Demo.apk" >> "$GITHUB_OUTPUT"
+          echo "package=$PACKAGE" >> "$GITHUB_OUTPUT"
+
+      - name: Android emulator install smoke test
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          arch: x86_64
+          profile: pixel_5
+          script: |
+            set -euo pipefail
+            adb wait-for-device
+            adb install -r "${{ steps.apk.outputs.apk_path }}"
+            adb shell monkey -p "${{ steps.apk.outputs.package }}" 1
+            sleep 8
+            adb shell dumpsys package "${{ steps.apk.outputs.package }}" | grep -q "versionCode"
+            echo "INSTALL_AND_LAUNCH=PASS"
+
+      - name: Upload verified Investor Demo APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: DALMA-Investor-Demo-Verified
+          path: verified-output/
+          if-no-files-found: error
+          retention-days: 14
