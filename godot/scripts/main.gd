@@ -92,9 +92,6 @@ var world_decorations: Array[Node3D] = []
 var world_ring: MeshInstance3D
 var world_core: MeshInstance3D
 var world_light: OmniLight3D
-var world_ring: MeshInstance3D
-var world_core: MeshInstance3D
-var world_light: OmniLight3D
 var rolling := false
 var selected_tab := "BOARD"
 var dice_a := 2
