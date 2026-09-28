@@ -1,0 +1,21 @@
+name: Everest CI Smoke
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  smoke:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Verify Everest marker
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f docs/EVEREST-DALMA-COENGINEERING-CHARTER.md
+          test -f godot/project.godot
+          echo "EVEREST_SMOKE=PASS"
