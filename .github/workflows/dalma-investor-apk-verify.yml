@@ -43,23 +43,54 @@ jobs:
           SIZE="$(stat -c%s DALMA_Investor_Candidate.apk)"
           test "$SIZE" -gt 100000000
 
-      - name: Validate APK package, ZIP integrity and signature
+      - name: Re-sign exact APK with modern Android signature
+        id: sign
+        run: |
+          set -euo pipefail
+          mkdir -p signing verified
+          PASS="$(openssl rand -hex 16)"
+          keytool -genkeypair -noprompt \
+            -keystore signing/dalma-investor-demo.jks \
+            -storepass "$PASS" \
+            -keypass "$PASS" \
+            -alias dalma-investor-demo \
+            -keyalg RSA \
+            -keysize 3072 \
+            -validity 3650 \
+            -dname "CN=DALMA Investor Demo, O=OpenC ACN Labs, C=ES"
+          "$ANDROID_HOME/build-tools/35.0.0/zipalign" -p -f 4 \
+            DALMA_Investor_Candidate.apk verified/aligned.apk
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" sign \
+            --ks signing/dalma-investor-demo.jks \
+            --ks-pass "pass:$PASS" \
+            --ks-key-alias dalma-investor-demo \
+            --key-pass "pass:$PASS" \
+            --v1-signing-enabled true \
+            --v2-signing-enabled true \
+            --v3-signing-enabled true \
+            --out verified/DALMA_Investor_Demo.apk \
+            verified/aligned.apk
+          rm -f verified/aligned.apk signing/dalma-investor-demo.jks
+          test -s verified/DALMA_Investor_Demo.apk
+
+      - name: Validate re-signed APK package, ZIP integrity and signature
         id: validate
         run: |
           set -euo pipefail
-          APK="$GITHUB_WORKSPACE/DALMA_Investor_Candidate.apk"
+          APK="$GITHUB_WORKSPACE/verified/DALMA_Investor_Demo.apk"
           unzip -tq "$APK" >/dev/null
           "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging "$APK" | tee badging.txt
           "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose "$APK" | tee signature.txt
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --min-sdk-version 24 "$APK"
           "$ANDROID_HOME/build-tools/35.0.0/zipalign" -c -P 16 -v 4 "$APK"
+          grep -q "Verified using v2 scheme" signature.txt
           PACKAGE="$(sed -n "s/package: name='\([^']*\)'.*/\1/p" badging.txt | head -1)"
           VERSION="$(sed -n "s/package: name='[^']*' versionCode='\([^']*\)' versionName='\([^']*\)'.*/\1|\2/p" badging.txt | head -1)"
           test -n "$PACKAGE"
-          mkdir -p verified
-          cp "$APK" verified/DALMA_Investor_Demo.apk
-          SHA="$(sha256sum "$APK" | awk '{print $1}')"
           SIZE="$(stat -c%s "$APK")"
-          printf 'status=PASS\nsize_bytes=%s\nsha256=%s\npackage=%s\nversion=%s\n' "$SIZE" "$SHA" "$PACKAGE" "$VERSION" > verified/VERIFICATION.txt
+          test "$SIZE" -gt 100000000
+          SHA="$(sha256sum "$APK" | awk '{print $1}')"
+          printf 'status=PASS\nsize_bytes=%s\nsha256=%s\npackage=%s\nversion=%s\nsignature=v2+v3\n' "$SIZE" "$SHA" "$PACKAGE" "$VERSION" > verified/VERIFICATION.txt
           echo "package=$PACKAGE" >> "$GITHUB_OUTPUT"
 
       - name: Android emulator install and launch
