@@ -1111,8 +1111,18 @@ func _show_overlay(title_text:String,sub_text:String,kind:String)->void:
     action.text="REVEAL CARD"
     action.pressed.connect(func(): overlay.visible=false; _reveal_card())
   elif kind=="EVENT":
-    action.text="RISK EVENT"
+    action.text="RISK • HIGH REWARD"
     action.pressed.connect(func(): overlay.visible=false; _resolve_event(true))
+    action.position=Vector2(185,900)
+    action.size=Vector2(570,82)
+
+    var safe_action:=Button.new()
+    safe_action.text="SAFE • GUARANTEED"
+    safe_action.position=Vector2(185,1000)
+    safe_action.size=Vector2(570,82)
+    safe_action.add_theme_font_size_override("font_size",21)
+    safe_action.pressed.connect(func(): overlay.visible=false; _resolve_event(false))
+    overlay.add_child(safe_action)
   else:
     action.pressed.connect(func(): overlay.visible=false)
 
@@ -1128,12 +1138,14 @@ func _open_chest()->void:
   _refresh_ui()
 
 func _resolve_event(risk:bool)->void:
-  var success:=not risk or rng.randf()<0.62
-  var coins:=int(round((620 if success and risk else (40 if risk else 220))*_reward_multiplier()))
+  var result:=GameRules.resolve_event(risk,rng.randf(),_reward_multiplier())
+  var success:=bool(result["success"])
+  var coins:=int(result["coins"])
   g["coins"]=int(g["coins"])+coins
-  g["xp"]=int(g["xp"])+(22 if success and risk else 8)
-  if success and risk: g["keys"]=int(g["keys"])+1
-  _show_toast(("Risk paid off" if risk and success else ("Risk failed" if risk else "Safe route"))+"  +%s coins."%_fmt(coins))
+  g["xp"]=int(g["xp"])+int(result["xp"])
+  g["keys"]=int(g["keys"])+int(result["keys"])
+  var label:="Risk paid off" if risk and success else ("Risk failed" if risk else "Safe route")
+  _show_toast(label+"  +%s coins."%_fmt(coins))
   _level_check()
   _save()
   _refresh_ui()
