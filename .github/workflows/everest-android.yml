@@ -132,10 +132,15 @@ jobs:
           AVDMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/avdmanager"
           EMULATOR="$ANDROID_HOME/emulator/emulator"
           SERIAL="emulator-5556"
-          mkdir -p "$HOME/.android"
+          export ANDROID_SDK_HOME="$HOME"
+          export ANDROID_AVD_HOME="$HOME/.android/avd"
+          mkdir -p "$ANDROID_AVD_HOME"
           touch "$HOME/.android/repositories.cfg"
 
           echo "no" | "$AVDMANAGER" create avd -n everest-ci -k "system-images;android-36;google_apis;x86_64" --device "pixel_5" --force
+          "$AVDMANAGER" list avd | tee avd-list.txt
+          test -f "$ANDROID_AVD_HOME/everest-ci.ini"
+          test -d "$ANDROID_AVD_HOME/everest-ci.avd"
 
           adb kill-server || true
           adb start-server
@@ -256,6 +261,7 @@ jobs:
           path: |
             verified-output/verification.txt
             emulator.log
+            avd-list.txt
             window-focus.txt
             gfxinfo.txt
             gfxinfo-after.txt
