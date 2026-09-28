@@ -252,15 +252,15 @@ func _create_world_center() -> void:
   world_core.position.y = 1.65
   world_core.material_override = _emissive_mat(worlds[0]["color"],1.7)
   board_root.add_child(world_core)
-  world_ring = MeshInstance3D.new()
-  var torus := TorusMesh.new()
-  torus.inner_radius = 1.45
-  torus.outer_radius = 1.58
-  ring.mesh = torus
-  ring.position.y = 1.18
-  ring.rotation.x = PI/2.0
-  ring.material_override = _emissive_mat(worlds[0]["color"],0.9)
-  board_root.add_child(ring)
+  var center_ring := MeshInstance3D.new()
+  var center_torus := TorusMesh.new()
+  center_torus.inner_radius = 1.45
+  center_torus.outer_radius = 1.58
+  center_ring.mesh = center_torus
+  center_ring.position.y = 1.18
+  center_ring.rotation.x = PI/2.0
+  center_ring.material_override = _emissive_mat(worlds[0]["color"],0.9)
+  board_root.add_child(center_ring)
 
 func _build_camera() -> void:
   camera = Camera3D.new()
