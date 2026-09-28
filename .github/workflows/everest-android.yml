@@ -57,6 +57,11 @@ jobs:
           test -n "$SOURCE_ZIP"
           cp "$SOURCE_ZIP" "$GITHUB_WORKSPACE/.godot-cache/.local/share/godot/export_templates/4.7.2.stable/android_source.zip"
           find "$GITHUB_WORKSPACE/.godot-cache/.local/share/godot/export_templates/4.7.2.stable" -maxdepth 1 -type f -printf '%f\n'
+          rm -rf godot/android
+          mkdir -p godot/android/build
+          unzip -q "$SOURCE_ZIP" -d godot/android/build
+          test -f godot/android/build/build.gradle || test -f godot/android/build/settings.gradle
+          printf "Godot Gradle template installed at godot/android/build\n"
           tools/godot --version
 
       - name: Validate Godot project
