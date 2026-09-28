@@ -57,7 +57,7 @@ export default function App(){
   return <SafeAreaView style={styles.root}><StatusBar style="light"/><ScrollView contentContainerStyle={styles.page}>
     <View style={styles.top}><View><Text style={styles.wordmark}>DALMA</Text><Text style={styles.kicker}>ADVENTURE • INVESTOR DEMO</Text></View><View style={styles.avatar}><Text style={styles.avatarText}>D</Text></View></View>
 
-    {tab==="BOARD" && <Animated.View style={{opacity:1,transform:[{translateY:roll.interpolate({inputRange:[0,1],outputRange:[0,-2]})}]}}>
+    {tab==="BOARD" && <Animated.View style={{opacity:1,transform:[{translateY:roll.interpolate({inputRange:[0,1],outputRange:[0,-2]})},{scale:roll.interpolate({inputRange:[0,.5,1],outputRange:[1,1.025,1]})},{rotateZ:roll.interpolate({inputRange:[0,.5,1],outputRange:["0deg","0.7deg","0deg"]})}]}}>
       <View style={styles.hero}>
         <View style={styles.stars}>{Array.from({length:18}).map((_,i)=><View key={i} style={[styles.star,{left:(i*29)%96+"%",top:(i*37)%86+"%"}]}/>)}</View>
         <Animated.View style={[styles.heroCopy,{transform:[{translateY:heroFloat.interpolate({inputRange:[0,1],outputRange:[0,-5]})}]}]}><Text style={styles.eyebrow}>WORLD 01 • ORIGIN GATE</Text><Text style={styles.heroTitle}>GENESIS</Text><Text style={styles.heroSub}>One DNA. Infinite civilizations.</Text><View style={styles.tags}><View style={styles.tag}><Text style={styles.tagText}>RISK → REWARD</Text></View><View style={styles.tag}><Text style={styles.tagText}>OFFLINE CORE</Text></View></View></View>
