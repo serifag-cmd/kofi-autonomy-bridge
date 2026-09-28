@@ -24,8 +24,19 @@ jobs:
           distribution: temurin
           java-version: "21"
 
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
+      - name: Configure preinstalled Android SDK
+        shell: bash
+        run: |
+          set -euo pipefail
+          SDK="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}}"
+          test -d "$SDK"
+          echo "ANDROID_HOME=$SDK" >> "$GITHUB_ENV"
+          echo "ANDROID_SDK_ROOT=$SDK" >> "$GITHUB_ENV"
+          if ! command -v sdkmanager >/dev/null 2>&1; then
+            SDKMANAGER="$(find "$SDK" -type f -name sdkmanager -print -quit 2>/dev/null || true)"
+            test -n "$SDKMANAGER"
+            echo "$(dirname "$SDKMANAGER")" >> "$GITHUB_PATH"
+          fi
 
       - name: Install Android platform/build tools
         run: |
@@ -34,7 +45,7 @@ jobs:
 
       - name: Download canonical DALMA source
         env:
-          SOURCE_URL: "https://uc7a8b923e0b6e356adb2ca2e659.dl.dropboxusercontent.com/cd/0/get/DI_yV6W0VGJCm_5xWJtNl6bFKFF-A4qquJBqcvgVrpjNTtWiPEBeDniyCT8M32ztS9dCenDNc9PuzF3T82T3ccvPJWGO69fF9a0pYMSSEfKp2poHNn-ii5mNhzSg4YnMCj57FzimKbVQnqa5wxvg9dGAqXbVzrWFxLv_GtIA4Jd04g/file?c_luid=9c24a1ab"
+          SOURCE_URL: "https://uc031b00f2cf04e6b29a877db7cb.dl.dropboxusercontent.com/cd/0/get/DI-muRyw31DoPQpkgAtUoel2X_wGmfv4YNCjpbM41qHLk7qDGom5zPD0wgLsctqg1NlHWZ1zxDZOxehvJ6DbxysBImiTmfTaEWLMZk3692SukcddAyu4bfaRg0nBQg1sGyRAwdnQqswro1n8s6trgGFNCXpT1_SeKopbUgq2SzXKkA/file?c_luid=9c24a1ab"
         run: |
           curl -fL --retry 3 --retry-all-errors "$SOURCE_URL" -o dalma-source.zip
           test -s dalma-source.zip
