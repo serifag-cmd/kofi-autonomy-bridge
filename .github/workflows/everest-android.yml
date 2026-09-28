@@ -56,6 +56,10 @@ jobs:
           SOURCE_ZIP="$(find tools/templates -type f -name 'android_source.zip' | head -1)"
           test -n "$SOURCE_ZIP"
           cp "$SOURCE_ZIP" "$GITHUB_WORKSPACE/.godot-cache/.local/share/godot/export_templates/4.7.2.stable/android_source.zip"
+          VERSION_FILE="$(find tools/templates -maxdepth 2 -type f -name 'version.txt' | head -1)"
+          test -n "$VERSION_FILE"
+          cp "$VERSION_FILE" "$GITHUB_WORKSPACE/.godot-cache/.local/share/godot/export_templates/4.7.2.stable/version.txt"
+          test "$(cat "$GITHUB_WORKSPACE/.godot-cache/.local/share/godot/export_templates/4.7.2.stable/version.txt")" = "4.7.2.stable"
           find "$GITHUB_WORKSPACE/.godot-cache/.local/share/godot/export_templates/4.7.2.stable" -maxdepth 1 -type f -printf '%f\n'
           rm -rf godot/android
           mkdir -p godot/android/build
