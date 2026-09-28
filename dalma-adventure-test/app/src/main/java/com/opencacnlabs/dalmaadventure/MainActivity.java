@@ -22,6 +22,8 @@ public class MainActivity extends Activity {
 
         int energy, coins, level, position, relics, streak, shields, attacks, world, tab;
         int[] buildings = new int[3];
+        final String[] worlds = {"GENESIS ISLAND","ASTRAL WILDS","ABYSSAL OCEAN","VOLCANIC CROWN","NEON NEXUS","SHADOW DIMENSION","ORIGIN CORE"};
+        final String[][] zones = {{"Genesis Gate","Golden Relic","Canine Sanctuary"},{"Sky Garden","Star Forge","Celestial Harbor"},{"Pearl Trench","Tide Temple","Leviathan Vault"},{"Basalt Citadel","Lava Observatory","Obsidian Throne"},{"Neon Market","Quantum Arcade","Signal Spire"},{"Void Forest","Mirror Citadel","Dark Archive"},{"Origin Garden","Genesis Engine","Eternal Gate"}};
         int[] cards = new int[9];
         int actionMode = 0;
         int raidChoice = -1;
@@ -134,9 +136,9 @@ public class MainActivity extends Activity {
             float right=w-12, heroTop=136, heroBot=258;
             fill(c,Color.rgb(25,21,12),12,heroTop,right,heroBot,20);
             stroke(c,Color.rgb(88,68,28),12,heroTop,right,heroBot,20);
-            text(c,world==1?"GENESIS ISLAND":"NEW DALMA FRONTIER",28,heroTop+29,9,gold,true);
+            text(c,worlds[Math.min(worlds.length-1,world-1)],28,heroTop+29,9,gold,true);
             text(c,"THE FIRST CANINE LEGEND",28,heroTop+58,11,cream,true);
-            text(c,"Build • Raid • Collect • Rule",28,heroTop+82,12,Color.WHITE,false);
+            text(c,"Explore • Build • Raid • Collect • Evolve",28,heroTop+82,12,Color.WHITE,false);
 
             if(!dailyClaimed){
                 fill(c,gold,right-128,heroTop+24,right-26,heroTop+67,11);
@@ -173,13 +175,13 @@ public class MainActivity extends Activity {
             float right=w-12, top=136;
             fill(c,panel,12,top,right,h-95,18); stroke(c,Color.rgb(40,40,40),12,top,right,h-95,18);
             text(c,"DALMA WORLD",27,top+27,15,cream,true);
-            text(c,"Completa distritos para desbloquear el siguiente mundo.",27,top+49,10,muted,false);
-            String[] names={"Genesis Gate","Golden Relic","Neon District"};
+            text(c,"Construye las zonas de este mundo para abrir el siguiente universo.",27,top+49,10,muted,false);
+            String[] names=zones[Math.min(zones.length-1,world-1)];
             for(int i=0;i<3;i++){
                 float y=top+65+i*91;
                 fill(c,Color.rgb(22,22,22),23,y,right-23,y+76,14);
                 text(c,names[i],36,y+25,14,cream,true);
-                text(c,"LEVEL "+buildings[i]+"/3",36,y+46,9,muted,false);
+                text(c,"ZONE LEVEL "+buildings[i]+"/3",36,y+46,9,muted,false);
                 int cost=300+(buildings[i]*150);
                 fill(c,coins>=cost && buildings[i]<3?gold:Color.rgb(70,68,60),right-110,y+18,right-35,y+56,10);
                 center(c,buildings[i]>=3?"DONE":cost+" ◉",right-72,y+42,8,Color.rgb(10,10,10),true);
@@ -188,15 +190,15 @@ public class MainActivity extends Activity {
                 fill(c,gold,23,top+345,right-23,top+393,14);
                 center(c,"DESBLOQUEAR SIGUIENTE MUNDO",w/2,top+375,10,Color.rgb(8,8,8),true);
             }
-            text(c,"Shields protect your world. Attacks open rival actions.",27,h-120,9,muted,false);
-            text(c,"Persistent local save • Offline core",27,h-105,8,Color.rgb(82,80,74),false);
+            text(c,"Shields protect this universe. Attacks open rival actions.",27,h-120,9,muted,false);
+            text(c,"Persistent local save • Offline core • Universe progression",27,h-105,8,Color.rgb(82,80,74),false);
         }
 
         void collection(Canvas c,float w,float h,int gold,int cream,int muted,int panel){
             float right=w-12, top=136;
             fill(c,panel,12,top,right,h-95,18); stroke(c,Color.rgb(40,40,40),12,top,right,h-95,18);
             text(c,"CARD COLLECTION",27,top+27,15,cream,true);
-            text(c,"Complete themed sets for permanent bonuses.",27,top+49,10,muted,false);
+            text(c,"Completa colecciones de cada universo para bonus permanentes.",27,top+49,10,muted,false);
             for(int i=0;i<9;i++){
                 int row=i/3,col=i%3;
                 float gap=9, cw=(right-42-gap*2)/3f, ch=92;
@@ -243,7 +245,7 @@ public class MainActivity extends Activity {
                 for(int i=0;i<3;i++){
                     float yy=t+78+i*85;
                     fill(c,Color.rgb(31,24,15),l+20,yy,r-20,yy+65,14);
-                    text(c,"RIVAL DISTRICT "+(i+1),l+34,yy+25,12,cream,true);
+                    text(c,"RIVAL WORLD ZONE "+(i+1),l+34,yy+25,12,cream,true);
                     text(c,buildings[i]<3?"HP "+(3-buildings[i]):"DESTROYED",l+34,yy+46,9,muted,false);
                     fill(c,attacks>0?gold:Color.rgb(70,68,60),r-105,yy+15,r-35,yy+51,10);
                     center(c,"STRIKE",r-70,yy+38,8,Color.rgb(8,8,8),true);
@@ -286,8 +288,8 @@ public class MainActivity extends Activity {
                 case 2: shields=Math.min(5,shields+1); message="Shield gained. Protect your world."; break;
                 case 3:
                     int idx=firstBuilding();
-                    if(idx>=0){ buildings[idx]=Math.min(3,buildings[idx]+1); coins+=150; message="Free district build!"; }
-                    else message="All districts complete.";
+                    if(idx>=0){ buildings[idx]=Math.min(3,buildings[idx]+1); coins+=150; message="Free world zone build!"; }
+                    else message="All zones in this world are complete.";
                     break;
                 case 4: coins+=350+level*40; relics++; addCard(); message="Chest opened: coins + card."; break;
                 case 5:
@@ -320,7 +322,7 @@ public class MainActivity extends Activity {
                     if(y>=yy && y<=yy+65 && x>22 && x<w-22){
                         if(attacks>0){
                             attacks--; int gain=120+level*70; coins+=gain;
-                            message="Strike landed. +"+gain+" coins.";
+                            message="Rival zone raided. +"+gain+" coins.";
                             actionMode=0; persist(); invalidate();
                         } else {
                             message="No attack tokens.";
@@ -368,7 +370,7 @@ public class MainActivity extends Activity {
                     float yy=top+i*91;
                     int cost=300+(buildings[i]*150);
                     if(y>=yy && y<=yy+76 && x>getWidth()-125 && buildings[i]<3){
-                        if(coins>=cost){ coins-=cost; buildings[i]++; relics++; message="District upgraded."; persist(); }
+                        if(coins>=cost){ coins-=cost; buildings[i]++; relics++; message="World zone upgraded."; persist(); }
                         else message="Need "+cost+" coins.";
                         invalidate(); return true;
                     }
