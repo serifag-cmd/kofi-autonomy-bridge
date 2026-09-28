@@ -8,7 +8,7 @@ on:
       - "DALMA_BUILD_TRIGGER"
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build-verify:
@@ -34,7 +34,7 @@ jobs:
 
       - name: Download canonical DALMA source
         env:
-          SOURCE_URL: "https://uc5e6d257143ad8abfa1b96da971.dl.dropboxusercontent.com/cd/0/get/DI8OIxK2J59nH8uOJdgfPrFMXjJhgJLZQGoeXNbrWBGL4p-keazWSGqA7IPaY6aWeG1HlzbocpO7-mM8i2Dl2-LKuKbsckCCv-Wzqa3soT7ZbUuMTj862nqiCTRAjdmyezPon9WhDJq7nwulHMc5-qzt18N5V88GszEvfGX65fG3Pg/file?c_luid=9c24a1ab"
+          SOURCE_URL: "https://uc7a8b923e0b6e356adb2ca2e659.dl.dropboxusercontent.com/cd/0/get/DI_yV6W0VGJCm_5xWJtNl6bFKFF-A4qquJBqcvgVrpjNTtWiPEBeDniyCT8M32ztS9dCenDNc9PuzF3T82T3ccvPJWGO69fF9a0pYMSSEfKp2poHNn-ii5mNhzSg4YnMCj57FzimKbVQnqa5wxvg9dGAqXbVzrWFxLv_GtIA4Jd04g/file?c_luid=9c24a1ab"
         run: |
           curl -fL --retry 3 --retry-all-errors "$SOURCE_URL" -o dalma-source.zip
           test -s dalma-source.zip
@@ -50,7 +50,7 @@ jobs:
           GRADLEW="$(find source -type f -name gradlew -print -quit)"
           if [ -z "$GRADLEW" ]; then
             echo "No gradlew found in canonical DALMA source archive."
-            find source -maxdepth 4 -type f | sort | head -200
+            find source -maxdepth 5 -type f | sort | head -300
             exit 1
           fi
           ROOT="$(dirname "$GRADLEW")"
@@ -72,16 +72,12 @@ jobs:
           if [ -z "$APK" ]; then
             APK="$(find . -type f -name '*.apk' | sort | tail -1 || true)"
           fi
-          if [ -z "$APK" ]; then
-            echo "No APK produced."
-            exit 1
-          fi
+          test -n "$APK"
           ABS="$(realpath "$APK")"
           SIZE="$(stat -c%s "$ABS")"
           echo "APK=$ABS"
           echo "SIZE=$SIZE"
           test "$SIZE" -gt 50000000
-          file "$ABS" | grep -qi "zip"
           unzip -tq "$ABS" >/dev/null
           "${ANDROID_HOME}/build-tools/35.0.0/apksigner" verify --verbose "$ABS"
           PACKAGE="$("${ANDROID_HOME}/build-tools/35.0.0/aapt" dump badging "$ABS" | sed -n "s/package: name='\\([^']*\\)'.*/\\1/p" | head -1)"
@@ -93,6 +89,8 @@ jobs:
           printf 'apk=%s\nbytes=%s\nsha256=%s\npackage=%s\nversion=%s\n' "$ABS" "$SIZE" "$SHA" "$PACKAGE" "$VERSION" > "${GITHUB_WORKSPACE}/verified-output/verification.txt"
           echo "apk_path=${GITHUB_WORKSPACE}/verified-output/DALMA_Investor_Demo.apk" >> "$GITHUB_OUTPUT"
           echo "package=$PACKAGE" >> "$GITHUB_OUTPUT"
+          echo "size=$SIZE" >> "$GITHUB_OUTPUT"
+          echo "sha=$SHA" >> "$GITHUB_OUTPUT"
 
       - name: Android emulator install smoke test
         uses: reactivecircus/android-emulator-runner@v2
@@ -116,3 +114,27 @@ jobs:
           path: verified-output/
           if-no-files-found: error
           retention-days: 14
+
+      - name: Persist verified build status
+        if: ${{ always() }}
+        shell: bash
+        run: |
+          set +e
+          mkdir -p ci-status
+          {
+            echo "DALMA INVESTOR DEMO BUILD STATUS"
+            echo "utc=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            echo "commit=${GITHUB_SHA}"
+            echo "job_status=${{ job.status }}"
+            echo "apk_size=${{ steps.apk.outputs.size }}"
+            echo "apk_sha256=${{ steps.apk.outputs.sha }}"
+            echo "package=${{ steps.apk.outputs.package }}"
+            if [ -f verified-output/verification.txt ]; then
+              cat verified-output/verification.txt
+            fi
+          } > ci-status/DALMA_BUILD_STATUS.txt
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add ci-status/DALMA_BUILD_STATUS.txt
+          git diff --cached --quiet || git commit -m "ci: persist DALMA Investor Demo verification status"
+          git push
