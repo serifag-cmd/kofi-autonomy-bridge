@@ -2,8 +2,6 @@ name: DALMA Investor Demo Android Build
 
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
 concurrency:
   group: dalma-investor-demo
   cancel-in-progress: true
