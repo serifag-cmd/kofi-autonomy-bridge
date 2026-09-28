@@ -6,17 +6,20 @@ on:
 jobs:
   android:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: dalma-adventure
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
-        with: {node-version: 20, cache: npm}
+        with:
+          node-version: 20
       - run: npm install --no-audit --no-fund
       - run: npx expo prebuild --platform android --no-install
-      - working-directory: android
-        run: ./gradlew assembleDebug --no-daemon --stacktrace
+      - run: ./android/gradlew assembleDebug --no-daemon --stacktrace
       - run: test -s android/app/build/outputs/apk/debug/app-debug.apk
       - uses: actions/upload-artifact@v4
         with:
           name: DALMA_ADVENTURE_Test_Funcional
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+          path: dalma-adventure/android/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
