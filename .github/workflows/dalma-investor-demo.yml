@@ -38,6 +38,22 @@ jobs:
           yes | "$SDKMANAGER" --licenses >/dev/null || true
           "$SDKMANAGER" "platform-tools" "platforms;android-35" "build-tools;35.0.0"
 
+      - name: Inject canonical DALMA visual assets
+        shell: bash
+        env:
+          SOURCE_URL: "https://ucbebd2ef90440793a6c8789398c.dl.dropboxusercontent.com/cd/0/get/DI-24Og6PrK7truJgEg0fAm5IdSgRVOIs4p-Cb6DEfi0XCSNbA1R1IAN70of4o3mABJY2fFuOhdiuFt83CxpzoD_zTBRAObkN-yXNVt6jgnFBJf6fY5vx0RHEDXpGWqGOapuAETVkFzJqUdExM1j_WtWmZrq5Xi_lWw-uQck-sBHkw/file?c_luid=9c24a1ab"
+        run: |
+          set -euo pipefail
+          curl -fL --retry 3 --retry-all-errors "$SOURCE_URL" -o dalma-source.zip
+          unzip -q dalma-source.zip -d dalma-asset-source
+          ASSET_ROOT="$(find dalma-asset-source -type d -name assets -print -quit)"
+          test -n "$ASSET_ROOT"
+          test -s "$ASSET_ROOT/dalma-hero.png"
+          mkdir -p dalma-adventure/assets
+          cp "$ASSET_ROOT/dalma-hero.png" dalma-adventure/assets/dalma-hero.png
+          cp "$ASSET_ROOT/dalma-reference.png" dalma-adventure/assets/dalma-reference.png
+          ls -lh dalma-adventure/assets
+
       - name: Install Node dependencies
         working-directory: dalma-adventure
         run: npm install --no-audit --no-fund
