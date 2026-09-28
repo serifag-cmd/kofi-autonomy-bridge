@@ -103,15 +103,15 @@ jobs:
           profile: pixel_5
           disable-animations: true
           script: |
-            set -euo pipefail
             adb wait-for-device
-            adb install -r ${{ steps.apk.outputs.apk_path }}
-            adb shell monkey -p ${{ steps.apk.outputs.package }} 1
+            adb install -r "${{ steps.apk.outputs.apk_path }}"
+            adb shell monkey -p "${{ steps.apk.outputs.package }}" 1
             sleep 10
-            adb shell dumpsys package ${{ steps.apk.outputs.package }} | grep -q "versionCode"
+            adb shell dumpsys package "${{ steps.apk.outputs.package }}" | grep -q "versionCode"
             echo "INSTALL_AND_LAUNCH=PASS"
 
       - name: Upload verified Investor Demo APK
+        if: ${{ success() }}
         uses: actions/upload-artifact@v4
         with:
           name: DALMA-Investor-Demo-Verified
@@ -134,6 +134,14 @@ jobs:
           } > ci-status/DALMA_BUILD_STATUS.txt
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add ci-status/DALMA_BUILD_STATUS.txt
-          git diff --cached --quiet || git commit -m "ci: persist DALMA Investor Demo verification status"
-          git push
+          echo "Verification status written to artifact workspace."
+          cat ci-status/DALMA_BUILD_STATUS.txt
+
+      - name: Upload verification status
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: DALMA-Verification-Status
+          path: ci-status/DALMA_BUILD_STATUS.txt
+          if-no-files-found: error
+          retention-days: 14
