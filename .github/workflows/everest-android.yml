@@ -53,7 +53,10 @@ jobs:
           rm -rf tools/templates
           mkdir -p tools/templates
           unzip -q tools/templates.tpz -d tools/templates
-          cp tools/templates/templates/* "$GITHUB_WORKSPACE/.godot-cache/.local/share/godot/export_templates/4.7.2.stable/"
+          SOURCE_ZIP="$(find tools/templates -type f -name 'android_source.zip' | head -1)"
+          test -n "$SOURCE_ZIP"
+          cp "$SOURCE_ZIP" "$GITHUB_WORKSPACE/.godot-cache/.local/share/godot/export_templates/4.7.2.stable/android_source.zip"
+          find "$GITHUB_WORKSPACE/.godot-cache/.local/share/godot/export_templates/4.7.2.stable" -maxdepth 1 -type f -printf '%f\n'
           tools/godot --version
 
       - name: Validate Godot project
