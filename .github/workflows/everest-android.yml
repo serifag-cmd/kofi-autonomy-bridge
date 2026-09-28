@@ -1,0 +1,179 @@
+name: Everest DALMA Android Product Verification
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: everest-dalma-android
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  ANDROID_HOME: /usr/local/lib/android/sdk
+  ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
+
+jobs:
+  build-verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Configure Android 16 SDK
+        shell: bash
+        run: |
+          set -euo pipefail
+          SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" "platform-tools" "platforms;android-36" "build-tools;36.0.0" "emulator" "system-images;android-35;google_apis;x86_64"
+
+      - name: Install Godot 4.7.2 stable
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p tools
+          curl -fL --retry 3 --retry-all-errors "https://github.com/godotengine/godot/releases/download/4.7.2-stable/Godot_v4.7.2-stable_linux.x86_64.zip" -o tools/godot.zip
+          unzip -q tools/godot.zip -d tools/godot-dist
+          mv "tools/godot-dist/Godot_v4.7.2-stable_linux.x86_64" tools/godot
+          chmod +x tools/godot
+          mkdir -p "$HOME/.local/share/godot/export_templates/4.7.2.stable"
+          curl -fL --retry 3 --retry-all-errors "https://github.com/godotengine/godot/releases/download/4.7.2-stable/Godot_v4.7.2-stable_export_templates.tpz" -o tools/templates.tpz
+          rm -rf tools/templates
+          mkdir -p tools/templates
+          unzip -q tools/templates.tpz -d tools/templates
+          cp tools/templates/templates/* "$HOME/.local/share/godot/export_templates/4.7.2.stable/"
+          tools/godot --version
+
+      - name: Validate Godot project
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .godot-cache
+          HOME="$GITHUB_WORKSPACE/.godot-cache" tools/godot --headless --path godot --editor --quit-after 8
+
+      - name: Export exact Test Funcional APK
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p verified-output
+          HOME="$GITHUB_WORKSPACE/.godot-cache" tools/godot --headless --path godot --export-debug "Android" "$GITHUB_WORKSPACE/verified-output/DALMA_Everest_Test_Funcional.apk"
+          test -s verified-output/DALMA_Everest_Test_Funcional.apk
+
+      - name: Validate APK integrity and metadata
+        id: apk
+        shell: bash
+        run: |
+          set -euo pipefail
+          APK="$GITHUB_WORKSPACE/verified-output/DALMA_Everest_Test_Funcional.apk"
+          SIZE="$(stat -c%s "$APK")"
+          test "$SIZE" -gt 10000000
+          unzip -tq "$APK" >/dev/null
+          "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose "$APK"
+          BADGING="$("$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging "$APK")"
+          PACKAGE="$(printf '%s\n' "$BADGING" | grep -o "package: name='[^']*'" | head -1 | cut -d"'" -f2)"
+          VERSION="$(printf '%s\n' "$BADGING" | grep -o "versionCode='[^']*' versionName='[^']*'" | head -1)"
+          TARGET="$(printf '%s\n' "$BADGING" | grep -o "targetSdkVersion:'[^']*'" | head -1 || true)"
+          test "$PACKAGE" = "com.opencacnlabs.dalmaadventure"
+          mkdir -p verified-output
+          SHA="$(sha256sum "$APK" | awk '{print $1}')"
+          {
+            echo "apk=$APK"
+            echo "bytes=$SIZE"
+            echo "sha256=$SHA"
+            echo "package=$PACKAGE"
+            echo "version=$VERSION"
+            echo "target=$TARGET"
+          } > verified-output/verification.txt
+          echo "package=$PACKAGE" >> "$GITHUB_OUTPUT"
+
+      - name: Launch real Android emulator
+        shell: bash
+        run: |
+          set -euo pipefail
+          export PATH="$ANDROID_HOME/emulator:$ANDROID_HOME/platform-tools:$PATH"
+          AVDMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/avdmanager"
+          mkdir -p "$HOME/.android"
+          touch "$HOME/.android/repositories.cfg"
+          echo "no" | "$AVDMANAGER" create avd -n everest-ci -k "system-images;android-35;google_apis;x86_64" --device "pixel_5" --force
+          adb kill-server || true
+          adb start-server
+          nohup emulator -avd everest-ci -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect -no-snapshot -wipe-data -no-metrics > emulator.log 2>&1 &
+          EMULATOR_PID=$!
+          cleanup(){ kill "$EMULATOR_PID" >/dev/null 2>&1 || true; }
+          trap cleanup EXIT
+          adb wait-for-device
+          BOOTED=0
+          for i in $(seq 1 140); do
+            BOOT="$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r' || true)"
+            if [ "$BOOT" = "1" ]; then BOOTED=1; break; fi
+            sleep 3
+          done
+          test "$BOOTED" = "1"
+          adb install -r verified-output/DALMA_Everest_Test_Funcional.apk
+          for i in $(seq 1 5); do
+            if adb shell monkey -p "${{ steps.apk.outputs.package }}" 1 >/dev/null 2>&1; then break; fi
+            adb reconnect offline || true
+            sleep 2
+          done
+          APP_UP=0
+          for i in $(seq 1 45); do
+            PID="$(adb shell pidof "${{ steps.apk.outputs.package }}" 2>/dev/null | tr -d '\r' || true)"
+            if [ -n "$PID" ]; then APP_UP=1; break; fi
+            sleep 2
+          done
+          test "$APP_UP" = "1"
+          adb shell dumpsys window windows | grep -E "mCurrentFocus|mFocusedApp" > window-focus.txt || true
+          adb shell dumpsys gfxinfo "${{ steps.apk.outputs.package }}" > gfxinfo.txt
+          adb exec-out screencap -p > dalma-runtime.png
+          test -s dalma-runtime.png
+          adb shell input tap 540 1620
+          sleep 4
+          adb shell dumpsys gfxinfo "${{ steps.apk.outputs.package }}" > gfxinfo-after.txt
+          adb logcat -d -t 600 > logcat.txt
+          if grep -Eq "FATAL EXCEPTION|AndroidRuntime: FATAL" logcat.txt; then
+            echo "Runtime crash detected"
+            exit 1
+          fi
+          adb shell am force-stop "${{ steps.apk.outputs.package }}"
+          adb shell monkey -p "${{ steps.apk.outputs.package }}" 1 >/dev/null
+          sleep 4
+          PID2="$(adb shell pidof "${{ steps.apk.outputs.package }}" 2>/dev/null | tr -d '\r' || true)"
+          test -n "$PID2"
+          echo "ANDROID_INSTALL_LAUNCH_INTERACTION=PASS"
+
+      - name: Upload exact validated APK
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: DALMA-Everest-Test-Funcional
+          path: verified-output/DALMA_Everest_Test_Funcional.apk
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload private validation evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: DALMA-Everest-Validation-Evidence
+          path: |
+            verified-output/verification.txt
+            emulator.log
+            window-focus.txt
+            gfxinfo.txt
+            gfxinfo-after.txt
+            logcat.txt
+            dalma-runtime.png
+          if-no-files-found: warn
+          retention-days: 14
