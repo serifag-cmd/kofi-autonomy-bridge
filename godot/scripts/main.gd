@@ -84,9 +84,13 @@ var building_panel: ColorRect
 var raid_panel: ColorRect
 var collection_panel: ColorRect
 var mission_panel: ColorRect
+var world_panel: ColorRect
 var route_points: Array[Vector3] = []
 var tile_nodes: Array[Node3D] = []
 var building_nodes: Array[Node3D] = []
+var world_ring: MeshInstance3D
+var world_core: MeshInstance3D
+var world_light: OmniLight3D
 var rolling := false
 var selected_tab := "BOARD"
 var dice_a := 2
@@ -185,13 +189,14 @@ func _create_board_geometry() -> void:
   floor.mesh = plane
   floor.material_override = _mat(Color("#0D1117"),0.62,0.08)
   board_root.add_child(floor)
-  var ring := MeshInstance3D.new()
+  world_ring = MeshInstance3D.new()
+  world_ring.name = "WorldRing"
   var torus := TorusMesh.new()
   torus.inner_radius = 8.10
   torus.outer_radius = 9.05
-  ring.mesh = torus
-  ring.material_override = _mat(worlds[0]["color"],0.32,0.20)
-  board_root.add_child(ring)
+  world_ring.mesh = torus
+  world_ring.material_override = _mat(worlds[0]["color"],0.32,0.20)
+  board_root.add_child(world_ring)
   for i in TILE_COUNT:
     var tile := Node3D.new()
     tile.position = route_points[i]
@@ -236,14 +241,15 @@ func _create_world_center() -> void:
   center.position.y = 0.28
   center.material_override = _mat(Color("#242019"),0.36,0.16)
   board_root.add_child(center)
-  var core := MeshInstance3D.new()
+  world_core = MeshInstance3D.new()
+  world_core.name = "WorldCore"
   var sphere := SphereMesh.new()
   sphere.radius = 1.2
   sphere.height = 2.4
-  core.mesh = sphere
-  core.position.y = 1.65
-  core.material_override = _emissive_mat(worlds[0]["color"],1.7)
-  board_root.add_child(core)
+  world_core.mesh = sphere
+  world_core.position.y = 1.65
+  world_core.material_override = _emissive_mat(worlds[0]["color"],1.7)
+  board_root.add_child(world_core)
   var ring := MeshInstance3D.new()
   var torus := TorusMesh.new()
   torus.inner_radius = 1.45
@@ -414,12 +420,12 @@ func _build_lighting() -> void:
   sun.shadow_enabled=true
   sun.directional_shadow_max_distance=65
   add_child(sun)
-  var fill:=OmniLight3D.new()
-  fill.position=Vector3(0,5,0)
-  fill.light_color=worlds[0]["color"]
-  fill.light_energy=5.2
-  fill.omni_range=14
-  add_child(fill)
+  world_light=OmniLight3D.new()
+  world_light.position=Vector3(0,5,0)
+  world_light.light_color=worlds[0]["color"]
+  world_light.light_energy=5.2
+  world_light.omni_range=14
+  add_child(world_light)
 
 func _mat(color:Color,roughness:float,metallic:float)->StandardMaterial3D:
   var m:=StandardMaterial3D.new()
@@ -503,11 +509,12 @@ func _build_ui() -> void:
   ui.add_child(roll_button)
 
   var nav:=HBoxContainer.new()
-  nav.position=Vector2(22,1705)
-  nav.size=Vector2(1036,128)
-  nav.add_theme_constant_override("separation",8)
+  nav.position=Vector2(20,1705)
+  nav.size=Vector2(1040,128)
+  nav.add_theme_constant_override("separation",6)
   ui.add_child(nav)
   _nav_button("BOARD","⌁",nav)
+  _nav_button("WORLD","◈",nav)
   _nav_button("BUILD","⌂",nav)
   _nav_button("RAID","⚔",nav)
   _nav_button("COLLECTION","◆",nav)
@@ -561,14 +568,17 @@ func _build_panels() -> void:
   raid_panel=_panel()
   collection_panel=_panel()
   mission_panel=_panel()
+  world_panel=_panel()
   ui.add_child(building_panel)
   ui.add_child(raid_panel)
   ui.add_child(collection_panel)
   ui.add_child(mission_panel)
+  ui.add_child(world_panel)
   _populate_build_panel()
   _populate_raid_panel()
   _populate_collection_panel()
   _populate_mission_panel()
+  _populate_world_panel()
 
 func _panel()->ColorRect:
   var p:=ColorRect.new()
@@ -666,12 +676,73 @@ func _populate_mission_panel()->void:
     b.pressed.connect(func(idx=i): _claim_mission(idx))
     mission_panel.add_child(b)
 
+func _populate_world_panel()->void:
+  var h:=Label.new()
+  h.text="UNIVERSE MAP"
+  h.position=Vector2(40,30)
+  h.add_theme_font_size_override("font_size",32)
+  world_panel.add_child(h)
+  var sub:=Label.new()
+  sub.name="Sub"
+  sub.position=Vector2(40,82)
+  sub.size=Vector2(900,70)
+  sub.add_theme_font_size_override("font_size",16)
+  sub.add_theme_color_override("font_color",Color("#9399A3"))
+  world_panel.add_child(sub)
+  for i in WORLD_COUNT:
+    var b:=Button.new()
+    b.name="World%d"%i
+    b.position=Vector2(35,155+i*145)
+    b.size=Vector2(930,125)
+    b.add_theme_font_size_override("font_size",16)
+    b.pressed.connect(func(idx=i): _select_world(idx))
+    world_panel.add_child(b)
+
+func _select_world(index:int)->void:
+  var w=worlds[index]
+  if index>int(g["world"])+1:
+    _show_toast("Complete the previous world first.")
+    return
+  if index==int(g["world"]):
+    _set_tab("BOARD")
+    return
+  if int(g["stars"])<int(w["threshold"]):
+    _show_toast("Need %d stars to unlock %s."%[int(w["threshold"]),w["name"]])
+    return
+  g["world"]=index
+  g["pos"]=0
+  g["coins"]=int(g["coins"])+1200
+  g["energy"]=mini(_energy_cap(),int(g["energy"])+2)
+  g["xp"]=int(g["xp"])+30
+  g["mission_progress"]["world"]=1
+  dog_root.position=route_points[0]+Vector3(0,0.62,0)
+  _refresh_world()
+  _world_transition(w["color"])
+  _save()
+  _set_tab("BOARD")
+  _show_toast("%s unlocked • new materials, architecture and challenge."%w["name"])
+
+func _refresh_world_panel()->void:
+  if not is_instance_valid(world_panel): return
+  var sub=world_panel.get_node("Sub") as Label
+  var next_index=min(WORLD_COUNT-1,int(g["world"])+1)
+  sub.text="%d/%d worlds open • %d stars • next: %s at %d stars"%[int(g["world"])+1,WORLD_COUNT,int(g["stars"]),worlds[next_index]["name"],int(worlds[next_index]["threshold"])]
+  for i in WORLD_COUNT:
+    var w=worlds[i]
+    var b=world_panel.get_node("World%d"%i) as Button
+    var open:=i<=int(g["world"])
+    var ready:=i==int(g["world"])+1 and int(g["stars"])>=int(w["threshold"])
+    var state:="ACTIVE" if i==int(g["world"]) else ("OPEN" if open else ("READY • %d STARS"%int(w["threshold"]) if ready else "LOCKED • %d STARS"%int(w["threshold"])))
+    b.text="%s  %s\n%s\n%s"%[w["glyph"],w["name"],w["subtitle"],state]
+    b.disabled=i>int(g["world"])+1 or (i==int(g["world"])+1 and int(g["stars"])<int(w["threshold"]))
+
 func _set_tab(tab:String)->void:
   selected_tab=tab
   building_panel.visible=tab=="BUILD"
   raid_panel.visible=tab=="RAID"
   collection_panel.visible=tab=="COLLECTION"
   mission_panel.visible=tab=="MISSIONS"
+  world_panel.visible=tab=="WORLD"
   roll_button.visible=tab=="BOARD"
   info_label.visible=tab=="BOARD"
   dice_label.visible=tab=="BOARD"
@@ -684,6 +755,13 @@ func _refresh_world()->void:
   _rebuild_world_buildings()
   var w=worlds[int(g["world"])]
   world_label.text="%s  •  WORLD %02d  •  %s"%[w["glyph"],int(g["world"])+1,w["name"]]
+  for tile in tile_nodes:
+    for child in tile.get_children():
+      if child is Label3D:
+        child.modulate=w["color"] if child.font_size>30 else Color("#C9CDD2")
+  if world_ring: world_ring.material_override=_mat(w["color"],0.32,0.20)
+  if world_core: world_core.material_override=_emissive_mat(w["color"],1.7)
+  if world_light: world_light.light_color=w["color"]
   _refresh_ui()
 
 func _rebuild_world_buildings()->void:
@@ -732,6 +810,7 @@ func _refresh_ui()->void:
   _refresh_raid_panel()
   _refresh_collection_panel()
   _refresh_mission_panel()
+  _refresh_world_panel()
 
 func _roll()->void:
   if rolling: return
@@ -819,6 +898,7 @@ func _level_check()->void:
   while int(g["xp"])>=_xp_needed():
     g["xp"]=int(g["xp"])-_xp_needed()
     g["level"]=int(g["level"])+1
+    g["stars"]=int(g["stars"])+1
     g["coins"]=int(g["coins"])+500
     g["energy"]=mini(_energy_cap(),int(g["energy"])+2)
     _show_toast("LEVEL UP  •  %d  •  +500 coins"%int(g["level"]))
