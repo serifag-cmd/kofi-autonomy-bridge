@@ -64,6 +64,9 @@ jobs:
           rm -rf godot/android
           mkdir -p godot/android/build
           unzip -q "$SOURCE_ZIP" -d godot/android/build
+          echo "4.7.2.stable" > godot/android/.build_version
+          test "$(cat godot/android/.build_version)" = "4.7.2.stable"
+          touch godot/android/build/.gdignore
           test -f godot/android/build/build.gradle || test -f godot/android/build/settings.gradle
           printf "Godot Gradle template installed at godot/android/build\n"
           tools/godot --version
