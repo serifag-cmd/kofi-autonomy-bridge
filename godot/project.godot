@@ -11,11 +11,6 @@ window/size/window_width_override=540
 window/size/window_height_override=960
 window/handheld/orientation=1
 
-[rendering]
-renderer/rendering_method="mobile"
-renderer/rendering_method.mobile="mobile"
-environment/defaults/default_clear_color=Color(0.018,0.021,0.03,1)
-textures/default_filters/use_nearest_mipmap_filter=false
 
 [rendering]
 renderer/rendering_method="mobile"
