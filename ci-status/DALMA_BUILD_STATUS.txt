@@ -1,0 +1,7 @@
+DALMA INVESTOR DEMO BUILD STATUS
+utc=2026-09-28T00:18:32Z
+commit=0d256c547c88e11a212d1c7d9ef5a450e41cfd62
+job_status=failure
+apk_size=
+apk_sha256=
+package=
