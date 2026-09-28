@@ -1,14 +1,14 @@
 {
   "expo":{
-    "name":"DALMA — Genesis",
-    "slug":"dalma-genesis-investor-demo",
-    "version":"0.2.0",
+    "name":"DALMA Adventure",
+    "slug":"dalma-adventure",
+    "version":"1.0.0",
     "orientation":"portrait",
     "userInterfaceStyle":"dark",
     "newArchEnabled":true,
     "android":{
       "package":"com.opencacnlabs.dalmaadventure",
-      "versionCode":6,
+      "versionCode":7,
       "adaptiveIcon":{"backgroundColor":"#07080B"}
     }
   }
