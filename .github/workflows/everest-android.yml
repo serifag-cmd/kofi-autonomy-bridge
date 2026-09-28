@@ -113,61 +113,132 @@ jobs:
           } > verified-output/verification.txt
           echo "package=$PACKAGE" >> "$GITHUB_OUTPUT"
 
+      - name: Enable KVM for Android emulator
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -e /dev/kvm ]; then
+            sudo chmod 666 /dev/kvm || true
+            echo "KVM_DEVICE=AVAILABLE"
+          else
+            echo "KVM_DEVICE=UNAVAILABLE"
+          fi
+
       - name: Launch real Android emulator
         shell: bash
         run: |
           set -euo pipefail
           export PATH="$ANDROID_HOME/emulator:$ANDROID_HOME/platform-tools:$PATH"
           AVDMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/avdmanager"
+          EMULATOR="$ANDROID_HOME/emulator/emulator"
+          SERIAL="emulator-5556"
           mkdir -p "$HOME/.android"
           touch "$HOME/.android/repositories.cfg"
+
           echo "no" | "$AVDMANAGER" create avd -n everest-ci -k "system-images;android-36;google_apis;x86_64" --device "pixel_5" --force
+
           adb kill-server || true
           adb start-server
-          nohup emulator -avd everest-ci -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect -no-snapshot -wipe-data -no-metrics > emulator.log 2>&1 &
+
+          "$EMULATOR" -avd everest-ci -port 5556 -no-window -no-audio -no-boot-anim \
+            -gpu swiftshader_indirect -no-snapshot -wipe-data -no-metrics > emulator.log 2>&1 &
           EMULATOR_PID=$!
-          cleanup(){ kill "$EMULATOR_PID" >/dev/null 2>&1 || true; }
-          trap cleanup EXIT
-          adb wait-for-device
-          BOOTED=0
-          for i in $(seq 1 140); do
-            BOOT="$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r' || true)"
-            if [ "$BOOT" = "1" ]; then BOOTED=1; break; fi
-            sleep 3
-          done
-          test "$BOOTED" = "1"
-          adb install -r verified-output/DALMA_Everest_Test_Funcional.apk
-          for i in $(seq 1 5); do
-            if adb shell monkey -p "${{ steps.apk.outputs.package }}" 1 >/dev/null 2>&1; then break; fi
-            adb reconnect offline || true
+
+          cleanup() {
+            kill "$EMULATOR_PID" >/dev/null 2>&1 || true
+            adb -s "$SERIAL" emu kill >/dev/null 2>&1 || true
+            adb kill-server >/dev/null 2>&1 || true
+          }
+          diagnostics() {
+            echo "=== ADB DEVICES ==="
+            adb devices -l || true
+            echo "=== EMULATOR PROCESS ==="
+            ps -ef | grep '[e]mulator' || true
+            echo "=== EMULATOR LOG ==="
+            tail -n 300 emulator.log || true
+            echo "=== KERNEL/KVM ==="
+            ls -l /dev/kvm 2>/dev/null || true
+          }
+          trap 'rc=$?; if [ "$rc" -ne 0 ]; then diagnostics; fi; cleanup; exit "$rc"' EXIT
+
+          DEVICE_READY=0
+          for i in $(seq 1 90); do
+            if ! kill -0 "$EMULATOR_PID" >/dev/null 2>&1; then
+              echo "Emulator process exited before ADB became ready"
+              diagnostics
+              exit 1
+            fi
+            STATE="$(adb -s "$SERIAL" get-state 2>/dev/null || true)"
+            if [ "$STATE" = "device" ]; then
+              DEVICE_READY=1
+              break
+            fi
             sleep 2
           done
+          test "$DEVICE_READY" = "1"
+
+          BOOTED=0
+          for i in $(seq 1 180); do
+            BOOT="$(adb -s "$SERIAL" shell getprop sys.boot_completed 2>/dev/null | tr -d '\r' || true)"
+            if [ "$BOOT" = "1" ]; then
+              BOOTED=1
+              break
+            fi
+            sleep 2
+          done
+          test "$BOOTED" = "1"
+
+          adb -s "$SERIAL" shell settings put global window_animation_scale 0.0
+          adb -s "$SERIAL" shell settings put global transition_animation_scale 0.0
+          adb -s "$SERIAL" shell settings put global animator_duration_scale 0.0
+
+          timeout 180 adb -s "$SERIAL" install -r verified-output/DALMA_Everest_Test_Funcional.apk
+
+          LAUNCHED=0
+          for i in $(seq 1 10); do
+            if adb -s "$SERIAL" shell monkey -p "${{ steps.apk.outputs.package }}" 1 >/dev/null 2>&1; then
+              LAUNCHED=1
+              break
+            fi
+            adb kill-server || true
+            adb start-server
+            sleep 3
+          done
+          test "$LAUNCHED" = "1"
+
           APP_UP=0
           for i in $(seq 1 45); do
-            PID="$(adb shell pidof "${{ steps.apk.outputs.package }}" 2>/dev/null | tr -d '\r' || true)"
-            if [ -n "$PID" ]; then APP_UP=1; break; fi
+            PID="$(adb -s "$SERIAL" shell pidof "${{ steps.apk.outputs.package }}" 2>/dev/null | tr -d '\r' || true)"
+            if [ -n "$PID" ]; then
+              APP_UP=1
+              break
+            fi
             sleep 2
           done
           test "$APP_UP" = "1"
-          adb shell dumpsys window windows | grep -E "mCurrentFocus|mFocusedApp" > window-focus.txt || true
-          adb shell dumpsys gfxinfo "${{ steps.apk.outputs.package }}" > gfxinfo.txt
-          adb exec-out screencap -p > dalma-runtime.png
+
+          adb -s "$SERIAL" shell dumpsys window windows | grep -E "mCurrentFocus|mFocusedApp" > window-focus.txt || true
+          adb -s "$SERIAL" shell dumpsys gfxinfo "${{ steps.apk.outputs.package }}" > gfxinfo.txt
+          adb -s "$SERIAL" exec-out screencap -p > dalma-runtime.png
           test -s dalma-runtime.png
-          adb shell input tap 540 1620
+
+          adb -s "$SERIAL" shell input tap 540 1620
           sleep 4
-          adb shell dumpsys gfxinfo "${{ steps.apk.outputs.package }}" > gfxinfo-after.txt
-          adb logcat -d -t 600 > logcat.txt
+          adb -s "$SERIAL" shell dumpsys gfxinfo "${{ steps.apk.outputs.package }}" > gfxinfo-after.txt
+          adb -s "$SERIAL" logcat -d -t 1000 > logcat.txt
+
           if grep -Eq "FATAL EXCEPTION|AndroidRuntime: FATAL" logcat.txt; then
             echo "Runtime crash detected"
             exit 1
           fi
-          adb shell am force-stop "${{ steps.apk.outputs.package }}"
-          adb shell monkey -p "${{ steps.apk.outputs.package }}" 1 >/dev/null
-          sleep 4
-          PID2="$(adb shell pidof "${{ steps.apk.outputs.package }}" 2>/dev/null | tr -d '\r' || true)"
-          test -n "$PID2"
-          echo "ANDROID_INSTALL_LAUNCH_INTERACTION=PASS"
 
+          adb -s "$SERIAL" shell am force-stop "${{ steps.apk.outputs.package }}"
+          adb -s "$SERIAL" shell monkey -p "${{ steps.apk.outputs.package }}" 1 >/dev/null
+          sleep 4
+          PID2="$(adb -s "$SERIAL" shell pidof "${{ steps.apk.outputs.package }}" 2>/dev/null | tr -d '\r' || true)"
+          test -n "$PID2"
+
+          echo "ANDROID_INSTALL_LAUNCH_INTERACTION=PASS"
       - name: Upload exact validated APK
         if: success()
         uses: actions/upload-artifact@v4
