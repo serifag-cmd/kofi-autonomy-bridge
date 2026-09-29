@@ -223,6 +223,9 @@ jobs:
           test "$APP_UP" = "1"
 
           sleep 15
+          # Android immersive-mode education overlay can appear on a fresh emulator; dismiss it before capturing runtime evidence.
+          adb -s "$SERIAL" shell input tap 710 507 || true
+          sleep 3
 
           adb -s "$SERIAL" shell dumpsys window windows | grep -E "mCurrentFocus|mFocusedApp" > window-focus.txt || true
           adb -s "$SERIAL" shell dumpsys gfxinfo "${{ steps.apk.outputs.package }}" > gfxinfo.txt
