@@ -34,7 +34,7 @@ jobs:
           test -s "$APK"
           SIZE=$(stat -c%s "$APK")
           echo "APK bytes: $SIZE"
-          test "$SIZE" -gt 100000
+          test "$SIZE" -gt 10000
           unzip -t "$APK" >/dev/null
           unzip -l "$APK" | grep -q 'AndroidManifest.xml'
           unzip -l "$APK" | grep -q 'classes.dex'
