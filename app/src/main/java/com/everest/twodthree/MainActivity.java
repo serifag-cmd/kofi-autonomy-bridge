@@ -19,6 +19,8 @@ import android.widget.*;
 import java.io.*;
 import java.nio.*;
 import java.util.*;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
 
@@ -26,6 +28,7 @@ public class MainActivity extends Activity {
     DepthView depthView;
     TextView status;
     float depth = 0.55f;
+    Bitmap currentBitmap;
 
     @Override public void onCreate(Bundle b) {
         super.onCreate(b);
@@ -54,7 +57,13 @@ public class MainActivity extends Activity {
             public void onProgressChanged(SeekBar s,int p,boolean f){ depth=p/100f; depthView.setDepth(depth); }
             public void onStartTrackingTouch(SeekBar s){} public void onStopTrackingTouch(SeekBar s){}
         });
-        panel.addView(bar, new LinearLayout.LayoutParams(0,64,1.25f));
+        panel.addView(bar, new LinearLayout.LayoutParams(0,64,1.0f));
+
+        Button export = new Button(this);
+        export.setText("ZIP");
+        export.setTextColor(Color.WHITE);
+        export.setOnClickListener(v -> chooseZipDestination());
+        panel.addView(export, new LinearLayout.LayoutParams(0,64,0.65f));
 
         FrameLayout.LayoutParams pp = new FrameLayout.LayoutParams(-1,100,Gravity.BOTTOM);
         pp.setMargins(18,0,18,24); root.addView(panel,pp);
@@ -76,12 +85,58 @@ public class MainActivity extends Activity {
         startActivityForResult(i,42);
     }
 
+    void chooseZipDestination(){
+        if(currentBitmap==null){ status.setText("Primero carga una imagen 2D"); return; }
+        Intent i=new Intent(Intent.ACTION_CREATE_DOCUMENT);
+        i.setType("application/zip");
+        i.putExtra(Intent.EXTRA_TITLE,"EVEREST_2D3D_ASSET.zip");
+        startActivityForResult(i,43);
+    }
+
+    void writeZip(Uri target) throws Exception {
+        Bitmap src=Bitmap.createScaledBitmap(currentBitmap,1024,1024,true);
+        Bitmap depthMap=Bitmap.createBitmap(src.getWidth(),src.getHeight(),Bitmap.Config.ARGB_8888);
+        for(int y=0;y<src.getHeight();y++) for(int x=0;x<src.getWidth();x++){
+            int px=src.getPixel(x,y);
+            int lum=(int)(0.2126f*Color.red(px)+0.7152f*Color.green(px)+0.0722f*Color.blue(px));
+            depthMap.setPixel(x,y,Color.rgb(lum,lum,lum));
+        }
+        try(OutputStream os=getContentResolver().openOutputStream(target); ZipOutputStream zip=new ZipOutputStream(os)){
+            addBitmap(zip,"images/original.png",src);
+            addBitmap(zip,"images/depth_map.png",depthMap);
+            String meta="{\n"+
+                "  \"product\": \"EVEREST 2D→3D\",\n"+
+                "  \"format\": \"PNG + depth map\",\n"+
+                "  \"source_width\": "+currentBitmap.getWidth()+",\n"+
+                "  \"source_height\": "+currentBitmap.getHeight()+",\n"+
+                "  \"export_width\": "+src.getWidth()+",\n"+
+                "  \"export_height\": "+src.getHeight()+",\n"+
+                "  \"depth_strength\": "+depth+",\n"+
+                "  \"depth_method\": \"luminance_heightfield\",\n"+
+                "  \"coordinate_convention\": \"UV origin top-left; luminance maps to Z\",\n"+
+                "  \"version\": \"1.1.0\"\n}";
+            addText(zip,"metadata/metadata.json",meta);
+            addText(zip,"metadata/README.txt","EVEREST 2D→3D asset export\n\nContains original image, generated depth map and machine-readable metadata.\nThe current engine uses a luminance heightfield; this is an exportable intermediate asset, not a photogrammetric mesh.\n");
+        } finally { src.recycle(); depthMap.recycle(); }
+    }
+    void addBitmap(ZipOutputStream zip,String name,Bitmap b) throws Exception{
+        zip.putNextEntry(new ZipEntry(name)); b.compress(Bitmap.CompressFormat.PNG,100,zip); zip.closeEntry();
+    }
+    void addText(ZipOutputStream zip,String name,String text) throws Exception{
+        zip.putNextEntry(new ZipEntry(name)); zip.write(text.getBytes("UTF-8")); zip.closeEntry();
+    }
+
     @Override protected void onActivityResult(int r,int c,Intent d){
         super.onActivityResult(r,c,d);
+        if(r==43 && c==RESULT_OK && d!=null && d.getData()!=null){
+            try{ writeZip(d.getData()); status.setText("ZIP exportado • imagen + mapa de profundidad + metadatos"); }
+            catch(Exception e){ status.setText("No se pudo exportar el ZIP"); }
+            return;
+        }
         if(r==42 && c==RESULT_OK && d!=null && d.getData()!=null){
             try(InputStream in=getContentResolver().openInputStream(d.getData())){
                 Bitmap b=BitmapFactory.decodeStream(in);
-                if(b!=null){ depthView.setBitmap(b); status.setText("3D generado  •  luminosidad → profundidad  •  Arrastra para rotar"); }
+                if(b!=null){ currentBitmap=b; depthView.setBitmap(b); status.setText("3D generado  •  luminosidad → profundidad  •  Arrastra para rotar"); }
             }catch(Exception e){ status.setText("No se pudo abrir la imagen"); }
         }
     }
