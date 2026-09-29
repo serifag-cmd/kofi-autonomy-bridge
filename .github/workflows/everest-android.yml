@@ -78,6 +78,17 @@ jobs:
           mkdir -p .godot-cache
           HOME="$GITHUB_WORKSPACE/.godot-cache" tools/godot --headless --path godot --editor --quit-after 8
 
+      - name: Execute main scene smoke before Android export
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .godot-cache/runtime-smoke
+          HOME="$GITHUB_WORKSPACE/.godot-cache" timeout 30 tools/godot --headless --path godot --verbose --quit-after 12 2>&1 | tee .godot-cache/runtime-smoke/main-scene.log
+          if grep -Eq "SCRIPT ERROR|Parse Error|ERROR:.*script|ERROR:.*Node" .godot-cache/runtime-smoke/main-scene.log; then
+            echo "Godot main-scene runtime errors detected"
+            exit 1
+          fi
+
       - name: Export exact Test Funcional APK
         shell: bash
         run: |
