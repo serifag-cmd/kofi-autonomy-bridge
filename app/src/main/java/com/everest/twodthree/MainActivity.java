@@ -3,7 +3,14 @@ package com.everest.twodthree;
 import android.app.*;
 import android.os.*;
 import android.content.*;
-import android.graphics.Bitmap;\nimport android.graphics.BitmapFactory;\nimport android.graphics.Canvas;\nimport android.graphics.Color;\nimport android.graphics.LinearGradient;\nimport android.graphics.Paint;\nimport android.graphics.Path;\nimport android.graphics.Shader;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.LinearGradient;
+import android.graphics.Paint;
+import android.graphics.Path;
+import android.graphics.Shader;
 import android.graphics.drawable.*;
 import android.net.Uri;
 import android.opengl.*;
@@ -11,7 +18,9 @@ import android.view.*;
 import android.widget.*;
 import java.io.*;
 import java.nio.*;
-import java.util.*;\nimport javax.microedition.khronos.egl.EGLConfig;\nimport javax.microedition.khronos.opengles.GL10;
+import java.util.*;
+import javax.microedition.khronos.egl.EGLConfig;
+import javax.microedition.khronos.opengles.GL10;
 
 public class MainActivity extends Activity {
     DepthView depthView;
