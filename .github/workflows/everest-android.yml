@@ -222,6 +222,18 @@ jobs:
           done
           test "$APP_UP" = "1"
 
+          FOCUS_READY=0
+          for i in $(seq 1 30); do
+            adb -s "$SERIAL" shell dumpsys window windows | grep -E "mCurrentFocus|mFocusedApp" > window-focus.txt || true
+            if grep -q "${{ steps.apk.outputs.package }}" window-focus.txt; then
+              FOCUS_READY=1
+              break
+            fi
+            sleep 2
+          done
+          test "$FOCUS_READY" = "1"
+          sleep 8
+
           adb -s "$SERIAL" shell dumpsys window windows | grep -E "mCurrentFocus|mFocusedApp" > window-focus.txt || true
           adb -s "$SERIAL" shell dumpsys gfxinfo "${{ steps.apk.outputs.package }}" > gfxinfo.txt
           adb -s "$SERIAL" exec-out screencap -p > dalma-runtime.png
