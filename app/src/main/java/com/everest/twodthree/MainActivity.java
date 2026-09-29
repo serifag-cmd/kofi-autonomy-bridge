@@ -86,6 +86,44 @@ public class MainActivity extends Activity {
         startActivityForResult(i,42);
     }
 
+    @Override protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (resultCode != RESULT_OK || data == null) return;
+        if (requestCode == 42) {
+            batchUris.clear();
+            ClipData clips = data.getClipData();
+            if (clips != null) {
+                for (int i = 0; i < clips.getItemCount(); i++) batchUris.add(clips.getItemAt(i).getUri());
+            } else if (data.getData() != null) {
+                batchUris.add(data.getData());
+            }
+            if (!batchUris.isEmpty()) {
+                try (InputStream in = getContentResolver().openInputStream(batchUris.get(0))) {
+                    Bitmap b = BitmapFactory.decodeStream(in);
+                    if (b != null) {
+                        currentBitmap = b;
+                        depthView.setBitmap(b);
+                        status.setText("Cargado: " + batchUris.size() + " imagen" + (batchUris.size() == 1 ? "" : "es") + " • arrastra para explorar");
+                    }
+                } catch (Exception e) {
+                    status.setText("No se pudo cargar la imagen");
+                }
+            }
+        } else if (requestCode == 43) {
+            final Uri target = data.getData();
+            if (target == null) return;
+            status.setText("Exportando assets…");
+            new Thread(() -> {
+                try {
+                    writeZip(target);
+                    runOnUiThread(() -> status.setText("ZIP exportado correctamente"));
+                } catch (Exception e) {
+                    runOnUiThread(() -> status.setText("Error al exportar: " + e.getClass().getSimpleName()));
+                }
+            }).start();
+        }
+    }
+
     void chooseZipDestination(){
         if(batchUris.isEmpty() && currentBitmap==null){ status.setText("Primero carga una imagen 2D"); return; }
         Intent i=new Intent(Intent.ACTION_CREATE_DOCUMENT);
