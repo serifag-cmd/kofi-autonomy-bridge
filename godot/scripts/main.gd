@@ -100,17 +100,25 @@ var rng := RandomNumberGenerator.new()
 var elapsed := 0.0
 
 func _ready() -> void:
+  print("EVEREST_STAGE_READY_START")
   rng.randomize()
   _init_save()
+  print("EVEREST_STAGE_SAVE")
   _build_world()
+  print("EVEREST_STAGE_WORLD")
   _build_camera()
+  print("EVEREST_STAGE_CAMERA")
   _build_dog()
+  print("EVEREST_STAGE_DOG")
   _build_lighting()
+  print("EVEREST_STAGE_LIGHT")
   _build_ui()
+  print("EVEREST_STAGE_UI")
   _refresh_world()
   _refresh_ui()
   _set_tab("BOARD")
   _show_toast("Genesis is waiting for DALMA.")
+  print("EVEREST_STAGE_READY_DONE")
 
 func _process(delta: float) -> void:
   elapsed += delta
