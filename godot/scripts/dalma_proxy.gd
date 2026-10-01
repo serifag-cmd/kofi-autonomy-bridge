@@ -41,7 +41,7 @@ func _process(delta: float) -> void:
     legs[2].rotation.x = opposite
     legs[3].rotation.x = stride
 
-    var bob := abs(sin(phase * 2.0)) * 0.055 * intensity
+    var bob: float = absf(sin(phase * 2.0)) * 0.055 * intensity
     body.position.y = 1.34 + bob
     neck.position.y = 1.92 + bob
     head.position.y = 2.28 + bob * 1.12
