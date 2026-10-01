@@ -1,0 +1,18 @@
+{
+  "product": "DALMA Adventure",
+  "artifact": "DALMA_Adventure_3D_v1.0.0_debug.apk",
+  "artifact_status": "REALIZADO / VERIFICABLE",
+  "release_class": "debug-installable",
+  "size_bytes": 28456438,
+  "sha256": "BA3778D410919EF456D7D13A497009187E83A9CC5BEFF418A594C3629021C86A",
+  "source_repository": "https://github.com/serifag-cmd/kofi-autonomy-bridge",
+  "source_path": "godot/releases/v1.0.0/DALMA_Adventure_3D_v1.0.0_debug.apk",
+  "commit": "183ba1432addc41fd8ad56d33666e78dd0928056",
+  "retrieval": {
+    "url": "https://raw.githubusercontent.com/serifag-cmd/kofi-autonomy-bridge/main/godot/releases/v1.0.0/DALMA_Adventure_3D_v1.0.0_debug.apk",
+    "independent_http_retrieval": true,
+    "retrieved_size_bytes": 28456438,
+    "retrieved_sha256": "BA3778D410919EF456D7D13A497009187E83A9CC5BEFF418A594C3629021C86A"
+  },
+  "note": "Durable artifact bridge verified. This artifact is not the commercial production release; production signing and final DALMA asset remain open gates."
+}
