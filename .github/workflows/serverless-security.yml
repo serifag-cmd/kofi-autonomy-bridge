@@ -4,7 +4,7 @@ on:
   pull_request:
     paths: ["api/**", "tests/**", "package.json", ".github/workflows/serverless-security.yml"]
   push:
-    branches: ["main"]
+    branches: ["**"]
     paths: ["api/**", "tests/**", "package.json", ".github/workflows/serverless-security.yml"]
 
 jobs:
