@@ -98,3 +98,100 @@ test("opportunity endpoint requires trusted credentials and a completed live pay
     assert.equal(good.body.job.payment.payment_id,"pi_live");
   } finally { if(old===undefined) delete process.env.EVEREST_VERIFIED_PAYMENT_TOKEN; else process.env.EVEREST_VERIFIED_PAYMENT_TOKEN=old; }
 });
+
+
+import kofiWebhook from "../api/kofi-webhook.js";
+
+function kofiPayload(overrides = {}) {
+  return {
+    verification_token: "kofi-test-token",
+    MessageID: "4f8f4b1c-83be-4bb4-9fb6-9ab7dd02cfa4",
+    Type: "Shop Order",
+    Amount: "9.90",
+    Currency: "EUR",
+    Timestamp: "2026-11-03T04:00:00.000Z",
+    ShopItems: [{ item_name: "Freelancer Rescue Kit — Quote, Scope & Cashflow Pack", quantity: 1 }],
+    ...overrides
+  };
+}
+
+test("Ko-fi parses its form-encoded data field and persists matching Shop Orders idempotently", async () => {
+  const oldToken=process.env.KOFI_VERIFICATION_TOKEN, oldUrl=process.env.SUPABASE_URL;
+  const oldKey=process.env.SUPABASE_SERVICE_ROLE_KEY, oldFetch=globalThis.fetch;
+  let stored, prefer, targetUrl;
+  process.env.KOFI_VERIFICATION_TOKEN="kofi-test-token";
+  process.env.SUPABASE_URL="https://db.example.test";
+  process.env.SUPABASE_SERVICE_ROLE_KEY="service-role-test";
+  delete process.env.AUTOMATION_TARGET_URL;
+  globalThis.fetch=async(url,options)=>{
+    targetUrl=String(url); prefer=options.headers.Prefer; stored=JSON.parse(options.body);
+    return {ok:true,status:201};
+  };
+  try {
+    const form=new URLSearchParams({data:JSON.stringify(kofiPayload())}).toString();
+    const r=res(); await kofiWebhook({method:"POST",body:form},r);
+    assert.equal(r.statusCode,200); assert.equal(r.body.persisted,true);
+    assert.equal(stored.type,"payment"); assert.equal(stored.amount_eur,9.9);
+    assert.equal(stored.experiment_id,"everest-zero-rescue-kit");
+    assert.equal(stored.source,"kofi");
+    assert.match(stored.id,/^[0-9a-f]{8}-[0-9a-f]{4}-5[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/);
+    assert.equal(stored.metadata.item_name,"Freelancer Rescue Kit — Quote, Scope & Cashflow Pack");
+    assert.equal(stored.metadata.evidence_status,"provider_webhook_received_pending_provider_reconciliation");
+    assert.equal(prefer,"resolution=ignore-duplicates,return=minimal");
+    assert.equal(targetUrl,"https://db.example.test/rest/v1/everest_events?on_conflict=id");
+  } finally {
+    globalThis.fetch=oldFetch;
+    if(oldToken===undefined) delete process.env.KOFI_VERIFICATION_TOKEN; else process.env.KOFI_VERIFICATION_TOKEN=oldToken;
+    if(oldUrl===undefined) delete process.env.SUPABASE_URL; else process.env.SUPABASE_URL=oldUrl;
+    if(oldKey===undefined) delete process.env.SUPABASE_SERVICE_ROLE_KEY; else process.env.SUPABASE_SERVICE_ROLE_KEY=oldKey;
+  }
+});
+
+test("Ko-fi acknowledges non-Shop-Order payments without recording a product sale", async () => {
+  const oldToken=process.env.KOFI_VERIFICATION_TOKEN, oldUrl=process.env.SUPABASE_URL;
+  const oldKey=process.env.SUPABASE_SERVICE_ROLE_KEY, oldFetch=globalThis.fetch;
+  let calls=0;
+  process.env.KOFI_VERIFICATION_TOKEN="kofi-test-token";
+  process.env.SUPABASE_URL="https://db.example.test";
+  process.env.SUPABASE_SERVICE_ROLE_KEY="service-role-test";
+  globalThis.fetch=async()=>{calls++;return {ok:true,status:201};};
+  try {
+    const r=res();
+    await kofiWebhook({method:"POST",body:{...kofiPayload(),Type:"Donation",ShopItems:[]}},r);
+    assert.equal(r.statusCode,200); assert.equal(r.body.ignored,true); assert.equal(calls,0);
+  } finally {
+    globalThis.fetch=oldFetch;
+    if(oldToken===undefined) delete process.env.KOFI_VERIFICATION_TOKEN; else process.env.KOFI_VERIFICATION_TOKEN=oldToken;
+    if(oldUrl===undefined) delete process.env.SUPABASE_URL; else process.env.SUPABASE_URL=oldUrl;
+    if(oldKey===undefined) delete process.env.SUPABASE_SERVICE_ROLE_KEY; else process.env.SUPABASE_SERVICE_ROLE_KEY=oldKey;
+  }
+});
+
+test("Ko-fi refuses to acknowledge a matching paid Shop Order when durable storage is missing", async () => {
+  const oldToken=process.env.KOFI_VERIFICATION_TOKEN, oldUrl=process.env.SUPABASE_URL;
+  const oldKey=process.env.SUPABASE_SERVICE_ROLE_KEY;
+  process.env.KOFI_VERIFICATION_TOKEN="kofi-test-token";
+  delete process.env.SUPABASE_URL; delete process.env.SUPABASE_SERVICE_ROLE_KEY;
+  try {
+    const r=res();
+    await kofiWebhook({method:"POST",body:kofiPayload()},r);
+    assert.equal(r.statusCode,503); assert.equal(r.body.error,"durable_storage_not_configured"); assert.equal(r.body.retryable,true);
+  } finally {
+    if(oldToken===undefined) delete process.env.KOFI_VERIFICATION_TOKEN; else process.env.KOFI_VERIFICATION_TOKEN=oldToken;
+    if(oldUrl===undefined) delete process.env.SUPABASE_URL; else process.env.SUPABASE_URL=oldUrl;
+    if(oldKey===undefined) delete process.env.SUPABASE_SERVICE_ROLE_KEY; else process.env.SUPABASE_SERVICE_ROLE_KEY=oldKey;
+  }
+});
+
+test("Ko-fi refuses invalid verification tokens before persistence", async () => {
+  const oldToken=process.env.KOFI_VERIFICATION_TOKEN, oldFetch=globalThis.fetch;
+  let calls=0; process.env.KOFI_VERIFICATION_TOKEN="kofi-test-token";
+  globalThis.fetch=async()=>{calls++;return {ok:true,status:201};};
+  try {
+    const r=res(); await kofiWebhook({method:"POST",body:kofiPayload({verification_token:"wrong"})},r);
+    assert.equal(r.statusCode,401); assert.equal(calls,0);
+  } finally {
+    globalThis.fetch=oldFetch;
+    if(oldToken===undefined) delete process.env.KOFI_VERIFICATION_TOKEN; else process.env.KOFI_VERIFICATION_TOKEN=oldToken;
+  }
+});
