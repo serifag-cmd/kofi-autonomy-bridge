@@ -1,55 +1,49 @@
-const ALLOWED = new Set([
-  "visit","qualified_visit","lead","demo_requested","pilot_started",
-  "payment","delivery","refund","renewal","feedback","failure"
-]);
-
+import { randomUUID } from "node:crypto";
 import { persistEvent } from "./_lib/persist.js";
+
+const CLIENT_EVENT_TYPES = new Set(["visit", "qualified_visit"]);
+
+function safeText(value, max, pattern) {
+  if (typeof value !== "string") return null;
+  const text = value.trim();
+  return text && text.length <= max && pattern.test(text) ? text : null;
+}
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     res.setHeader("Allow", "POST");
     return res.status(405).json({ ok: false, error: "method_not_allowed" });
   }
-
-  const body = req.body || {};
-  const type = String(body.type || "");
-  if (!ALLOWED.has(type)) {
-    return res.status(400).json({ ok: false, error: "unsupported_event_type" });
+  const body = req.body;
+  if (!body || typeof body !== "object" || Array.isArray(body)) {
+    return res.status(400).json({ ok: false, error: "invalid_body" });
+  }
+  if (JSON.stringify(body).length > 8192) {
+    return res.status(413).json({ ok: false, error: "payload_too_large" });
+  }
+  const type = typeof body.type === "string" ? body.type : "";
+  if (!CLIENT_EVENT_TYPES.has(type)) {
+    return res.status(403).json({ ok: false, error: "event_type_requires_trusted_server_source" });
   }
 
+  const input = body.metadata && typeof body.metadata === "object" && !Array.isArray(body.metadata) ? body.metadata : {};
+  const metadata = {};
+  const page = safeText(input.page, 80, /^[a-z0-9/_-]+$/i);
+  const language = safeText(input.language, 16, /^[a-z]{2,3}(?:-[a-z]{2,8})?$/i);
+  if (page) metadata.page = page.toLowerCase();
+  if (language) metadata.language = language.toLowerCase();
+
+  // Client telemetry cannot assert a payment, delivery, refund or revenue.
+  // Identity, experiment and time are assigned on the server.
   const event = {
-    id: body.id || crypto.randomUUID(),
+    id: randomUUID(),
     type,
-    experiment_id: body.experiment_id || "lead-response-agent",
-    amount_eur: Number.isFinite(Number(body.amount_eur)) ? Number(body.amount_eur) : null,
-    occurred_at: body.occurred_at || new Date().toISOString(),
-    metadata: body.metadata || {}
+    experiment_id: "everest-zero-rescue-kit",
+    occurred_at: new Date().toISOString(),
+    metadata
   };
-
-  const storage = await persistEvent(event, "metrics");
-
-  const target = process.env.AUTOMATION_TARGET_URL;
-  let forwarded = false;
-  if (target && target.startsWith("https://")) {
-    try {
-      const r = await fetch(target, {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify(event)
-      });
-      forwarded = r.ok;
-    } catch {}
-  }
-
-  res.status(200).json({
-    ok: true,
-    event,
-    persisted: storage.persisted,
-    storage_configured: storage.configured,
-    forwarded,
-    authoritative: storage.persisted,
-    note: storage.persisted
-      ? "Event persisted to durable storage."
-      : "Configure SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY with the provided SQL schema before treating metrics as authoritative."
-  });
+  const storage = await persistEvent(event, "public_telemetry");
+  if (!storage.configured) return res.status(503).json({ ok: false, error: "durable_storage_not_configured" });
+  if (!storage.persisted) return res.status(503).json({ ok: false, error: "durable_storage_unavailable" });
+  return res.status(202).json({ ok: true, persisted: true, event_id: event.id, type: event.type });
 }
