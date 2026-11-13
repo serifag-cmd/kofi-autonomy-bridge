@@ -134,7 +134,7 @@ test("Ko-fi parses its form-encoded data field and persists matching Shop Orders
     assert.equal(stored.type,"payment"); assert.equal(stored.amount_eur,9.9);
     assert.equal(stored.experiment_id,"everest-zero-rescue-kit");
     assert.equal(stored.source,"kofi");
-    assert.match(stored.id,/^[0-9a-f]{8}-[0-9a-f]{4}-5[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/);
+    assert.equal(stored.id,"4f8f4b1c-83be-4bb4-9fb6-9ab7dd02cfa4");
     assert.equal(stored.metadata.item_name,"Freelancer Rescue Kit — Quote, Scope & Cashflow Pack");
     assert.equal(stored.metadata.evidence_status,"provider_webhook_received_pending_provider_reconciliation");
     assert.equal(prefer,"resolution=ignore-duplicates,return=minimal");
