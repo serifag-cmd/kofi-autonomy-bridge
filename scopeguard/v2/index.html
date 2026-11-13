@@ -135,7 +135,8 @@ footer{max-width:1040px;margin:0 auto;padding:0 18px 30px;color:#667581;font-siz
   var lastRecord=null;
   var fieldIds=["deliverable","quantity","purpose","requirements","revision"];
   var materialIds=["newDeliverable","newIntegration","newFunction","urgent","moreVolume","otherChange"];
-  $("date").value=new Date().toISOString().slice(0,10);
+  function localToday(){var d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");}
+  $("date").value=localToday();
   function readData(){
     var d={};
     fieldIds.forEach(function(k){d[k]=$(k).value;});
@@ -208,7 +209,16 @@ footer{max-width:1040px;margin:0 auto;padding:0 18px 30px;color:#667581;font-siz
   $("reset").addEventListener("click",reset);
   $("download").addEventListener("click",download);
   $("print").addEventListener("click",function(){window.print();});
-  ["agreement","request"].forEach(function(k){$(k).addEventListener("input",function(){lastRecord=null;});});
+  function invalidateResult(){
+    lastRecord=null;
+    $("resultBody").hidden=true;
+    $("empty").hidden=false;
+    $("empty").textContent="Los datos han cambiado. Vuelve a evaluar para actualizar el resultado.";
+  }
+  ["agreement","request","project","date","notes","hours","rate","costs","buffer"].concat(fieldIds).concat(materialIds).forEach(function(k){
+    $(k).addEventListener("input",invalidateResult);
+    $(k).addEventListener("change",invalidateResult);
+  });
 })();
 </script>
 </body>
