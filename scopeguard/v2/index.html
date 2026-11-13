@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="Evaluador local y transparente de cambios de alcance y órdenes de cambio para freelancers y equipos de servicios.">
+<meta name="color-scheme" content="light">
+<title>ScopeGuard — Control de alcance</title>
+<style>
+:root{font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#17212b;background:#f4f6f8;font-synthesis:none;text-rendering:optimizeLegibility}
+*{box-sizing:border-box}body{margin:0;line-height:1.5}header{background:#142330;color:#fff;padding:28px 20px 24px}header .inner,main,.foot{max-width:1040px;margin:auto}header p{margin:6px 0 0;color:#c8d4dc;font-size:.95rem}h1{font-size:clamp(1.7rem,4vw,2.3rem);line-height:1.1;margin:0;letter-spacing:-.03em}h2{font-size:1.15rem;margin:0 0 12px}h3{font-size:1rem;margin:0 0 8px}.eyebrow{text-transform:uppercase;letter-spacing:.12em;font-size:.72rem;font-weight:700;color:#8bd3c7;margin-bottom:8px}
+main{padding:24px 18px 44px}.intro{font-size:.95rem;color:#43515e;margin:0 0 20px}.layout{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(280px,.9fr);gap:18px;align-items:start}.panel{background:#fff;border:1px solid #dbe2e8;border-radius:14px;padding:20px;box-shadow:0 4px 15px rgba(18,35,48,.04);margin-bottom:16px}.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}.field{display:flex;flex-direction:column;gap:5px;margin-bottom:14px}.field:last-child{margin-bottom:0}label,.field-label{font-weight:650;font-size:.88rem}.hint{font-size:.78rem;color:#647481}.field input,.field textarea,.field select{width:100%;border:1px solid #bbc7d0;background:#fff;border-radius:8px;padding:10px 11px;color:#17212b;font:inherit;font-size:.92rem}.field textarea{min-height:104px;resize:vertical}.field input:focus,.field textarea:focus,.field select:focus{outline:3px solid rgba(24,130,119,.18);border-color:#168679}
+.criteria{display:grid;grid-template-columns:1fr 155px;gap:12px;align-items:center;border-top:1px solid #edf0f2;padding:11px 0}.criteria:first-of-type{border-top:0}.criteria .name{font-size:.9rem;font-weight:600}.criteria .desc{font-size:.76rem;color:#647481}.criteria select{width:100%;border:1px solid #bbc7d0;background:#fff;border-radius:8px;padding:9px;font:inherit;font-size:.86rem}
+.checks{display:grid;grid-template-columns:1fr 1fr;gap:9px 12px}.check{display:flex;align-items:flex-start;gap:8px;font-size:.87rem}.check input{margin-top:4px;accent-color:#13786d}
+.actions{display:flex;flex-wrap:wrap;gap:9px;margin-top:14px}.btn{border:1px solid #142330;background:#142330;color:#fff;border-radius:8px;padding:10px 14px;font:inherit;font-weight:650;cursor:pointer}.btn.secondary{background:#fff;color:#142330}.btn:focus{outline:3px solid rgba(24,130,119,.28);outline-offset:2px}.btn:disabled{opacity:.45;cursor:not-allowed}
+.result{position:sticky;top:14px}.status{display:inline-block;border-radius:999px;padding:5px 10px;font-size:.74rem;font-weight:750;letter-spacing:.04em;background:#edf1f4;color:#31414d}.status.potential{background:#fff1de;color:#884d05}.status.clarify{background:#e8f0ff;color:#254d8b}.status.inside{background:#e1f4ed;color:#14614f}
+.summary{font-size:1.05rem;font-weight:750;margin:10px 0 6px}.result p{font-size:.87rem;color:#52616d}.result ul{padding-left:20px;margin:10px 0}.result li{margin:5px 0;font-size:.86rem}.estimate{border-top:1px solid #e5eaee;padding-top:14px;margin-top:14px}.amount{font-size:1.65rem;font-weight:800;letter-spacing:-.03em}.small{font-size:.75rem;color:#697985}
+.empty{border:1px dashed #becbd3;border-radius:10px;padding:15px;color:#5c6a75;font-size:.88rem;background:#fafcfd}
+.note{border-left:3px solid #dba44a;background:#fff8ec;padding:10px 12px;color:#5b4b32;font-size:.8rem;border-radius:0 7px 7px 0;margin-top:14px}
+footer{max-width:1040px;margin:0 auto;padding:0 18px 30px;color:#667581;font-size:.76rem}
+@media(max-width:800px){.layout{grid-template-columns:1fr}.result{position:static}.form-grid{grid-template-columns:1fr}}@media(max-width:480px){main{padding:18px 12px}.panel{padding:16px}.criteria{grid-template-columns:1fr}.checks{grid-template-columns:1fr}.actions .btn{flex:1 1 100%}}
+@media print{body{background:#fff}header{background:#fff;color:#17212b;border-bottom:2px solid #17212b}header p{color:#52616d}main{padding:12px}.layout{display:block}.panel{box-shadow:none;break-inside:avoid}.result{position:static}.actions,footer,.no-print{display:none!important}.empty{display:none}}
+</style>
+</head>
+<body>
+<header><div class="inner"><div class="eyebrow">UNLIMITED LABS · HERRAMIENTA LOCAL</div><h1>ScopeGuard</h1><p>Compara una nueva petición con el acuerdo original antes de comprometer horas.</p></div></header>
+<main>
+<p class="intro">Registra el alcance acordado, la petición nueva y las diferencias que hayas comprobado. ScopeGuard no decide por sí solo qué dice un contrato: hace explícitas las preguntas que debes resolver antes de aceptar el trabajo.</p>
+<div class="layout">
+<section aria-label="Evaluación de alcance">
+<div class="panel">
+<h2>1. Contexto del proyecto</h2>
+<div class="form-grid">
+<div class="field"><label for="project">Proyecto / cliente</label><input id="project" maxlength="120" placeholder="Ej. Rediseño web de Acme"></div>
+<div class="field"><label for="date">Fecha de revisión</label><input id="date" type="date"></div>
+</div>
+<div class="field"><label for="agreement">Alcance acordado</label><textarea id="agreement" maxlength="6000" placeholder="Pega o resume los entregables, límites, cantidades, criterios y revisiones acordadas. Elimina datos personales o confidenciales."></textarea><span class="hint">Describe el acuerdo original con suficiente precisión para compararlo.</span></div>
+<div class="field"><label for="request">Nueva petición</label><textarea id="request" maxlength="4000" placeholder="Describe literalmente el trabajo adicional solicitado."></textarea></div>
+</div>
+<div class="panel">
+<h2>2. Compara la petición con el acuerdo</h2>
+<p class="hint">Selecciona «Sí» solo cuando el acuerdo lo incluya claramente. «No» significa que la diferencia está comprobada; «No está claro» requiere aclaración.</p>
+<div class="criteria"><div><div class="name">Entregable</div><div class="desc">¿Es el mismo entregable ya acordado?</div></div><select id="deliverable" aria-label="Entregable"><option value="unclear">No está claro</option><option value="yes">Sí, está incluido</option><option value="no">No, es distinto</option></select></div>
+<div class="criteria"><div><div class="name">Cantidad / volumen</div><div class="desc">¿La cantidad solicitada está dentro del límite acordado?</div></div><select id="quantity" aria-label="Cantidad"><option value="unclear">No está claro</option><option value="yes">Sí, está incluido</option><option value="no">No, supera el límite</option></select></div>
+<div class="criteria"><div><div class="name">Objetivo / resultado</div><div class="desc">¿Se mantiene el mismo propósito del trabajo?</div></div><select id="purpose" aria-label="Objetivo"><option value="unclear">No está claro</option><option value="yes">Sí, se mantiene</option><option value="no">No, cambia el objetivo</option></select></div>
+<div class="criteria"><div><div class="name">Requisitos / funcionalidad</div><div class="desc">¿Se mantienen las especificaciones acordadas?</div></div><select id="requirements" aria-label="Requisitos"><option value="unclear">No está claro</option><option value="yes">Sí, se mantienen</option><option value="no">No, hay requisitos nuevos</option></select></div>
+<div class="criteria"><div><div class="name">Ronda de revisión</div><div class="desc">¿La petición forma parte de una revisión incluida?</div></div><select id="revision" aria-label="Revisión"><option value="unclear">No está claro</option><option value="yes">Sí, está incluida</option><option value="no">No, es una revisión extra</option><option value="na">No aplica</option></select></div>
+</div>
+<div class="panel">
+<h2>3. Cambios que pueden afectar al esfuerzo</h2>
+<div class="checks">
+<label class="check"><input type="checkbox" id="newDeliverable"> Nuevo entregable o pieza</label>
+<label class="check"><input type="checkbox" id="newIntegration"> Nueva integración o plataforma</label>
+<label class="check"><input type="checkbox" id="newFunction"> Funcionalidad o requisito nuevo</label>
+<label class="check"><input type="checkbox" id="urgent"> Cambio de fecha / urgencia</label>
+<label class="check"><input type="checkbox" id="moreVolume"> Más páginas, productos o unidades</label>
+<label class="check"><input type="checkbox" id="otherChange"> Otro cambio material</label>
+</div>
+<div class="field" style="margin-top:14px"><label for="notes">Evidencia / cláusula / conversación relevante</label><textarea id="notes" maxlength="3000" placeholder="Anota la sección del contrato, mensaje o criterio que respalda la comparación. No incluyas credenciales ni datos de clientes."></textarea></div>
+</div>
+<div class="panel">
+<h2>4. Estimación del cambio (opcional)</h2>
+<p class="hint">Introduce tus propias cifras. La estimación no es un precio contractual ni sustituye tu revisión comercial, fiscal o del acuerdo.</p>
+<div class="form-grid">
+<div class="field"><label for="hours">Horas adicionales estimadas</label><input id="hours" type="number" min="0" max="100000" step="0.25" placeholder="Ej. 3.5"></div>
+<div class="field"><label for="rate">Tarifa por hora (€)</label><input id="rate" type="number" min="0" max="1000000" step="0.01" placeholder="Ej. 60"></div>
+<div class="field"><label for="costs">Costes externos (€)</label><input id="costs" type="number" min="0" max="1000000" step="0.01" placeholder="Ej. 15"></div>
+<div class="field"><label for="buffer">Reserva de riesgo (%)</label><input id="buffer" type="number" min="0" max="100" step="1" value="10"></div>
+</div>
+<div class="actions no-print"><button class="btn" id="analyse" type="button">Evaluar petición</button><button class="btn secondary" id="reset" type="button">Limpiar</button></div>
+</div>
+</section>
+<aside class="result" aria-live="polite">
+<div class="panel">
+<div class="eyebrow">RESULTADO DE LA REVISIÓN</div>
+<div id="empty" class="empty">Completa el alcance y la petición. Después selecciona «Evaluar petición».</div>
+<div id="resultBody" hidden>
+<span id="status" class="status"></span>
+<div id="headline" class="summary"></div>
+<p id="explanation"></p>
+<h3>Motivos</h3><ul id="reasons"></ul>
+<div class="estimate" id="estimate" hidden><div class="small">Estimación orientativa del cambio</div><div class="amount" id="amount"></div><div class="small" id="formula"></div></div>
+<div class="note">No empieces el trabajo adicional hasta comprobar el acuerdo, explicar el cambio al cliente y obtener su aceptación por escrito. La clasificación es una ayuda de revisión, no una interpretación legal.</div>
+<div class="actions no-print"><button class="btn" id="download" type="button">Descargar registro JSON</button><button class="btn secondary" id="print" type="button">Imprimir / guardar PDF</button></div>
+</div>
+</div>
+</aside>
+</div>
+</main>
+<footer>Privacidad: los datos introducidos se procesan en esta página, en tu navegador. Esta versión no envía el contenido a un servidor ni lo guarda en una cuenta. Evita pegar información personal, secretos comerciales o credenciales. ScopeGuard no ofrece asesoramiento jurídico, fiscal ni contable.</footer>
+<script id="scopeguard-core">
+(function(){
+  function classifyAssessment(data){
+    var fields=["deliverable","quantity","purpose","requirements"];
+    if(data.revision!=="na") fields.push("revision");
+    var unknown=fields.filter(function(k){return data[k]==="unclear";});
+    var outside=fields.filter(function(k){return data[k]==="no";});
+    var material=Array.isArray(data.materialChanges)?data.materialChanges:[];
+    var reasons=[];
+    outside.forEach(function(k){reasons.push(label(k)+" no está incluido o supera el acuerdo según la comparación indicada.");});
+    unknown.forEach(function(k){reasons.push("Falta confirmar: "+label(k).toLowerCase()+".");});
+    material.forEach(function(k){reasons.push(materialLabel(k)+" está marcado como cambio material.");});
+    var state;
+    if(outside.length>0||material.length>0) state="potential";
+    else if(unknown.length>0) state="clarify";
+    else state="inside";
+    if(reasons.length===0) reasons.push("Las respuestas indican que los elementos comparados están incluidos; verifica siempre el texto contractual y el historial de revisiones.");
+    return {state:state,reasons:reasons,unknown:unknown,outside:outside,material:material};
+  }
+  function label(key){return ({deliverable:"El entregable",quantity:"La cantidad / volumen",purpose:"El objetivo / resultado",requirements:"Los requisitos / funcionalidad",revision:"La ronda de revisión"})[key]||key;}
+  function materialLabel(key){return ({newDeliverable:"Nuevo entregable",newIntegration:"Nueva integración o plataforma",newFunction:"Nueva funcionalidad",urgent:"Cambio de fecha o urgencia",moreVolume:"Mayor volumen",otherChange:"Otro cambio material"})[key]||key;}
+  function calculateEstimate(data){
+    var values=["hours","rate","costs","buffer"];
+    var n={};
+    for(var i=0;i<values.length;i++){
+      var value=data[values[i]];
+      if(value===null||value===undefined||value==="") return {valid:false,reason:"Introduce horas, tarifa, costes y reserva para calcular la estimación."};
+      n[values[i]]=Number(value);
+      if(!Number.isFinite(n[values[i]])||n[values[i]]<0) return {valid:false,reason:"Las cifras deben ser números válidos iguales o superiores a cero."};
+    }
+    if(n.buffer>100) return {valid:false,reason:"La reserva de riesgo no puede superar el 100%."};
+    var labour=n.hours*n.rate;
+    var reserve=labour*n.buffer/100;
+    var total=labour+reserve+n.costs;
+    return {valid:true,labour:money(labour),reserve:money(reserve),costs:money(n.costs),total:money(total),currency:"EUR",formula:"("+n.hours+" h × "+n.rate+" €/h) + "+n.buffer+"% de reserva + "+n.costs+" € de costes externos"};
+  }
+  function money(value){return Math.round((value+Number.EPSILON)*100)/100;}
+  window.ScopeGuardCore={classifyAssessment:classifyAssessment,calculateEstimate:calculateEstimate};
+})();
+</script>
+<script>
+(function(){
+  "use strict";
+  var $=function(id){return document.getElementById(id);};
+  var lastRecord=null;
+  var fieldIds=["deliverable","quantity","purpose","requirements","revision"];
+  var materialIds=["newDeliverable","newIntegration","newFunction","urgent","moreVolume","otherChange"];
+  $("date").value=new Date().toISOString().slice(0,10);
+  function readData(){
+    var d={};
+    fieldIds.forEach(function(k){d[k]=$(k).value;});
+    d.materialChanges=materialIds.filter(function(k){return $(k).checked;});
+    return d;
+  }
+  function showResult(result,estimate){
+    $("empty").hidden=true;$("resultBody").hidden=false;
+    var words={
+      potential:["CAMBIO POTENCIAL","Hay diferencias comprobadas o cambios materiales. No aceptes el trabajo adicional todavía.","potential"],
+      clarify:["REQUIERE ACLARACIÓN","Falta información para decidir si la petición está incluida. Aclara el acuerdo antes de estimar o aceptar.","clarify"],
+      inside:["PARECE INCLUIDO","Las respuestas indican que la petición encaja en los criterios comparados. Confírmalo contra el contrato y los límites acordados.","inside"]
+    };
+    var w=words[result.state];
+    $("status").textContent=w[0];$("status").className="status "+w[2];
+    $("headline").textContent=w[1];$("explanation").textContent="Esta es una clasificación preliminar basada únicamente en las respuestas que has seleccionado.";
+    $("reasons").replaceChildren();
+    result.reasons.forEach(function(reason){var li=document.createElement("li");li.textContent=reason;$("reasons").appendChild(li);});
+    if(estimate&&estimate.valid){
+      $("estimate").hidden=false;
+      $("amount").textContent=new Intl.NumberFormat("es-ES",{style:"currency",currency:"EUR"}).format(estimate.total);
+      $("formula").textContent=estimate.formula+". Mano de obra: "+estimate.labour.toFixed(2)+" €; reserva: "+estimate.reserve.toFixed(2)+" €; costes externos: "+estimate.costs.toFixed(2)+" €.";
+    }else{
+      $("estimate").hidden=true;
+    }
+  }
+  function evaluate(){
+    var agreement=$("agreement").value.trim(),request=$("request").value.trim();
+    if(!agreement||!request){$("empty").hidden=false;$("empty").textContent="Faltan el alcance acordado o la descripción de la nueva petición."; $("resultBody").hidden=true;return;}
+    var data=readData();
+    var assessment=window.ScopeGuardCore.classifyAssessment(data);
+    var estimateData={hours:$("hours").value,rate:$("rate").value,costs:$("costs").value||"0",buffer:$("buffer").value||"0"};
+    var estimate=window.ScopeGuardCore.calculateEstimate(estimateData);
+    if(estimateData.hours!==""&&estimateData.rate!==""){
+      if(!estimate.valid){$("empty").hidden=false;$("empty").textContent=estimate.reason;}
+      else $("empty").hidden=true;
+    }
+    lastRecord={
+      schemaVersion:"2.0",
+      product:"ScopeGuard",
+      reviewedAt:new Date().toISOString(),
+      project:$("project").value.trim(),
+      reviewDate:$("date").value,
+      agreedScope:agreement,
+      newRequest:request,
+      comparison:data,
+      evidence:$("notes").value.trim(),
+      assessment:assessment,
+      estimate:estimate.valid?estimate:null,
+      disclaimer:"Decision support only. Not legal, tax or accounting advice. Validate the signed agreement and obtain written client approval before extra work."
+    };
+    showResult(assessment,estimate);
+  }
+  function download(){
+    if(!lastRecord)return;
+    var blob=new Blob([JSON.stringify(lastRecord,null,2)],{type:"application/json;charset=utf-8"});
+    var url=URL.createObjectURL(blob);
+    var a=document.createElement("a");a.href=url;a.download="scopeguard-decision-"+(lastRecord.reviewDate||"record")+".json";
+    document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);
+  }
+  function reset(){
+    ["project","agreement","request","notes","hours","rate","costs"].forEach(function(k){$(k).value="";});
+    $("date").value=new Date().toISOString().slice(0,10);$("buffer").value="10";
+    fieldIds.forEach(function(k){$(k).value="unclear";});$("revision").value="unclear";
+    materialIds.forEach(function(k){$(k).checked=false;});
+    $("empty").hidden=false;$("empty").textContent="Completa el alcance y la petición. Después selecciona «Evaluar petición».";
+    $("resultBody").hidden=true;lastRecord=null;
+  }
+  $("analyse").addEventListener("click",evaluate);
+  $("reset").addEventListener("click",reset);
+  $("download").addEventListener("click",download);
+  $("print").addEventListener("click",function(){window.print();});
+  ["agreement","request"].forEach(function(k){$(k).addEventListener("input",function(){lastRecord=null;});});
+})();
+</script>
+</body>
+</html>
