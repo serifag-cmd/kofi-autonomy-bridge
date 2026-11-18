@@ -1,0 +1,46 @@
+name: Unlimited Labs GitHub Sentinel
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+  schedule:
+    - cron: "13 */6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+  issues: write
+
+concurrency:
+  group: github-sentinel-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  sentinel:
+    name: Repository health and CI watch
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Run repository sentinel
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_EVENT_NAME: ${{ github.event_name }}
+        run: python3 tools/github-sentinel.py
+      - name: Preserve audit evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: github-sentinel-${{ github.run_id }}
+          path: |
+            sentinel-report.md
+            sentinel-report.json
+          if-no-files-found: error
+          retention-days: 30
