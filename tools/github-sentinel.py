@@ -87,13 +87,13 @@ Path("sentinel-report.json").write_text(json.dumps({
 }, indent=2), encoding="utf-8")
 
 # Open one deduplicated issue for recent CI failures; no code, branch, release or deployment writes.
-if recent_failures and token:
+if recent_failures and token and event != "pull_request":
     title = "Sentinel alert: recent GitHub Actions failures"
     issues = api("issues?state=open&per_page=100") or []
     existing = next((i for i in issues if i.get("title") == title and "pull_request" not in i), None)
     body = report + "\nThis alert is generated automatically. Resolve the failing workflow(s), then the next sentinel run will re-check the repository."
     if not existing:
-        api("issues", "POST", {"title":title,"body":body,"labels":["ci","automated"]})
+        api("issues", "POST", {"title":title,"body":body})
     else:
         # Avoid noisy repeated comments; the open issue remains the single alert record.
         pass
