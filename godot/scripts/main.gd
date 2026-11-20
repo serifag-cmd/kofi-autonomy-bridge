@@ -272,11 +272,14 @@ func _create_world_center() -> void:
 
 func _build_camera() -> void:
   camera = Camera3D.new()
+  camera.name = "DALMAWorldCamera"
   camera.position = Vector3(0,16.8,16.8)
-  camera.rotation_degrees = Vector3(-43,0,0)
   camera.fov = 51
-  camera.current = true
   add_child(camera)
+  camera.look_at(Vector3.ZERO, Vector3.UP)
+  camera.make_current()
+  assert(camera.is_inside_tree() and camera.is_current(), "DALMA world camera must be active before first frame")
+  print("DALMA_RENDER_CAMERA_ACTIVE=", camera.is_current())
 
 func _build_dog() -> void:
   dog_root = Node3D.new()
@@ -454,9 +457,17 @@ func _emissive_mat(color:Color,energy:float)->StandardMaterial3D:
   return m
 
 func _build_ui() -> void:
+  var hud_layer := CanvasLayer.new()
+  hud_layer.name = "DALMAHUDCanvas"
+  hud_layer.layer = 10
+  add_child(hud_layer)
+
   ui=Control.new()
+  ui.name = "DALMAHUD"
   ui.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-  add_child(ui)
+  hud_layer.add_child(ui)
+  assert(ui.is_inside_tree() and hud_layer.is_inside_tree(), "DALMA HUD must be inside a CanvasLayer")
+  print("DALMA_RENDER_HUD_CANVAS_ACTIVE=", ui.is_inside_tree())
 
   var top:=ColorRect.new()
   top.color=Color(0.035,0.04,0.06,0.92)
