@@ -33,6 +33,8 @@ jobs:
         with:
           distribution: temurin
           java-version: "17"
+          cache: gradle
+          cache-dependency-path: godot/export_presets.cfg
 
       - name: Configure Android 16 SDK
         shell: bash
@@ -71,6 +73,21 @@ jobs:
           test "$(cat godot/android/.build_version)" = "4.7.2.stable"
           touch godot/android/build/.gdignore
           test -f godot/android/build/build.gradle || test -f godot/android/build/settings.gradle
+          # Prefer Google's GCS mirror of Maven Central; retain official repositories as fallback.
+          python3 - <<'PY'
+          from pathlib import Path
+          mirror = 'maven { url "https://maven-central.storage-download.googleapis.com/maven2/" }'
+          root = Path("godot/android/build")
+          changed = []
+          for path in list(root.rglob("*.gradle")) + list(root.rglob("*.gradle.kts")):
+              source = path.read_text(encoding="utf-8")
+              updated = source.replace("mavenCentral()", mirror + "\\n        mavenCentral()")
+              updated = updated.replace("gradlePluginPortal()", mirror + "\\n        gradlePluginPortal()")
+              if updated != source:
+                  path.write_text(updated, encoding="utf-8")
+                  changed.append(str(path))
+          print("Maven Central GCS mirror added to:", changed)
+          PY
           printf "Godot Gradle template installed at godot/android/build\n"
           tools/godot --version
 
