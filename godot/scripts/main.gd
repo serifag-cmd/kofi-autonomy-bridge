@@ -93,7 +93,7 @@ var building_nodes: Array[Node3D] = []
 var world_decorations: Array[Node3D] = []
 var world_ring: MeshInstance3D
 var world_core: MeshInstance3D
-var world_light: OmniLight3D
+var world_light: DirectionalLight3D
 var rolling := false
 var selected_tab := "BOARD"
 var dice_a := 2
@@ -468,34 +468,27 @@ func _add_leg(pos:Vector3) -> void:
   dog_legs.append(s)
 
 func _build_lighting() -> void:
+  # GLES3 mobile GPUs have a strict fragment-uniform budget. Keep one
+  # directional key and ambient fill; avoid extra omni lights, volumetric fog
+  # and glow passes that can exceed the OpenGL ES uniform-vector limit.
   var env:=WorldEnvironment.new()
   var e:=Environment.new()
   e.background_mode=Environment.BG_COLOR
   e.background_color=Color("#070A10")
   e.ambient_light_source=Environment.AMBIENT_SOURCE_COLOR
-  e.ambient_light_color=Color("#6D7484")
-  e.ambient_light_energy=0.58
+  e.ambient_light_color=Color("#8B91A0")
+  e.ambient_light_energy=0.82
   e.tonemap_mode=Environment.TONE_MAPPER_FILMIC
-  e.glow_enabled=true
-  e.glow_intensity=0.82
-  e.fog_enabled=true
-  e.fog_light_color=Color("#111824")
-  e.fog_light_energy=0.28
-  e.fog_density=0.007
+  e.glow_enabled=false
+  e.fog_enabled=false
   env.environment=e
   add_child(env)
-  var sun:=DirectionalLight3D.new()
-  sun.rotation_degrees=Vector3(-52,-28,0)
-  sun.light_color=Color("#FFF0C8")
-  sun.light_energy=1.45
-  sun.shadow_enabled=true
-  sun.directional_shadow_max_distance=65
-  add_child(sun)
-  world_light=OmniLight3D.new()
-  world_light.position=Vector3(0,5,0)
+  world_light=DirectionalLight3D.new()
+  world_light.name="DALMA_MobileKeyLight"
+  world_light.rotation_degrees=Vector3(-52,-28,0)
   world_light.light_color=worlds[0]["color"]
-  world_light.light_energy=5.2
-  world_light.omni_range=14
+  world_light.light_energy=1.8
+  world_light.shadow_enabled=false
   add_child(world_light)
 
 func _mat(color:Color,roughness:float,metallic:float)->StandardMaterial3D:
