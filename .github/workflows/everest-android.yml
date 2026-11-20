@@ -228,7 +228,7 @@ jobs:
           adb start-server
 
           "$EMULATOR" -avd everest-ci -port 5556 -no-window -no-audio -no-boot-anim \
-            -gpu swiftshader_indirect -no-snapshot -wipe-data -no-metrics > emulator.log 2>&1 &
+            -gpu lavapipe -no-snapshot -wipe-data -no-metrics > emulator.log 2>&1 &
           EMULATOR_PID=$!
 
           cleanup() {
