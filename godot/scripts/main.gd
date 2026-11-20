@@ -67,6 +67,9 @@ var camera: Camera3D
 var board_root: Node3D
 var dog_root: Node3D
 var dog_model: Node3D
+var dog_head: MeshInstance3D
+var dog_tail: MeshInstance3D
+var dog_legs: Array[MeshInstance3D] = []
 var fx_root: Node3D
 var ui: Control
 var info_label: Label
@@ -124,6 +127,13 @@ func _process(delta: float) -> void:
   elapsed += delta
   if dog_model:
     dog_model.position.y = sin(elapsed * 2.1) * 0.045
+    if is_instance_valid(dog_tail):
+      dog_tail.rotation_degrees.x = -55.0 + sin(elapsed * 5.4) * 15.0
+    if is_instance_valid(dog_head):
+      dog_head.rotation_degrees.x = sin(elapsed * 1.15) * 2.4
+    for i in dog_legs.size():
+      if is_instance_valid(dog_legs[i]):
+        dog_legs[i].rotation_degrees.z = 180.0 + sin(elapsed * 7.2 + float(i) * PI * 0.5) * 2.5
   if toast:
     toast.modulate.a = maxf(0.0, toast.modulate.a - delta * 0.35)
 
@@ -319,6 +329,7 @@ func _create_dog_body() -> void:
   head.position = Vector3(0,1.54,-1.08)
   head.material_override = _mat(Color("#F2F0E8"),0.80,0.0)
   dog_model.add_child(head)
+  dog_head = head
   _add_head_spot(Vector3(-0.36,1.78,-1.58),0.19)
   _add_head_spot(Vector3(0.38,1.68,-1.52),0.16)
   var muzzle := MeshInstance3D.new()
@@ -354,6 +365,8 @@ func _create_dog_body() -> void:
   tail.rotation_degrees = Vector3(-55,0,0)
   tail.material_override = _mat(Color("#EFEDE5"),0.80,0.0)
   dog_model.add_child(tail)
+  dog_tail = tail
+  _add_heart_mark()
 
 func _add_spot(pos:Vector3,r:float) -> void:
   var s := MeshInstance3D.new()
@@ -377,6 +390,52 @@ func _add_head_spot(pos:Vector3,r:float) -> void:
   s.material_override=_mat(Color("#18191C"),0.44,0.0)
   dog_model.add_child(s)
 
+func _add_heart_mark() -> void:
+  var heart := Node3D.new()
+  heart.position = Vector3(0.0,0.91,-1.015)
+  dog_model.add_child(heart)
+  var black := _mat(Color("#202126"),0.52,0.0)
+  for side in [-1.0,1.0]:
+    var lobe := MeshInstance3D.new()
+    var sphere := SphereMesh.new()
+    sphere.radius = 0.105
+    sphere.height = 0.15
+    lobe.mesh = sphere
+    lobe.position = Vector3(side*0.075,0.035,0.0)
+    lobe.scale = Vector3(1.0,1.0,0.30)
+    lobe.material_override = black
+    heart.add_child(lobe)
+  var point := MeshInstance3D.new()
+  var cone := ConeMesh.new()
+  cone.top_radius = 0.0
+  cone.bottom_radius = 0.16
+  cone.height = 0.24
+  point.mesh = cone
+  point.position = Vector3(0.0,-0.105,0.0)
+  point.rotation_degrees.x = 180.0
+  point.scale.z = 0.30
+  point.material_override = black
+  heart.add_child(point)
+
+func _add_lightning_ear_mark(pos:Vector3,rot:float) -> void:
+  var patch := Node3D.new()
+  patch.position = pos + Vector3(-0.015,0.015,-0.145)
+  patch.rotation_degrees.z = rot
+  dog_model.add_child(patch)
+  for spec in [
+    {"p":Vector3(-0.015,0.15,0.0),"r":-22.0,"h":0.22},
+    {"p":Vector3(0.035,-0.015,0.0),"r":28.0,"h":0.24},
+    {"p":Vector3(-0.035,-0.18,0.0),"r":-22.0,"h":0.18}
+  ]:
+    var bolt := MeshInstance3D.new()
+    var mesh := BoxMesh.new()
+    mesh.size = Vector3(0.095,float(spec["h"]),0.035)
+    bolt.mesh = mesh
+    bolt.position = spec["p"]
+    bolt.rotation_degrees.z = float(spec["r"])
+    bolt.material_override = _mat(Color("#17191E"),0.52,0.0)
+    patch.add_child(bolt)
+
 func _add_eye(pos:Vector3) -> void:
   var s := MeshInstance3D.new()
   var m := SphereMesh.new()
@@ -395,8 +454,10 @@ func _add_ear(pos:Vector3,rot:float) -> void:
   s.mesh=m
   s.position=pos
   s.rotation_degrees=Vector3(0,0,rot)
-  s.material_override=_mat(Color("#25272D"),0.64,0.0)
+  s.material_override=_mat(Color("#F2F0E8"),0.72,0.0)
   dog_model.add_child(s)
+  if rot < 0.0:
+    _add_lightning_ear_mark(pos,rot)
 
 func _add_leg(pos:Vector3) -> void:
   var s := MeshInstance3D.new()
@@ -408,6 +469,7 @@ func _add_leg(pos:Vector3) -> void:
   s.rotation_degrees=Vector3(0,0,180)
   s.material_override=_mat(Color("#F1EFE8"),0.82,0.0)
   dog_model.add_child(s)
+  dog_legs.append(s)
 
 func _build_lighting() -> void:
   var env:=WorldEnvironment.new()
