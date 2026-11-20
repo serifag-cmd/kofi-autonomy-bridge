@@ -67,7 +67,6 @@ var camera: Camera3D
 var board_root: Node3D
 var dog_root: Node3D
 var dog_model: Node3D
-var dog_head: MeshInstance3D
 var dog_tail: MeshInstance3D
 var dog_legs: Array[MeshInstance3D] = []
 var fx_root: Node3D
@@ -129,8 +128,6 @@ func _process(delta: float) -> void:
     dog_model.position.y = sin(elapsed * 2.1) * 0.045
     if is_instance_valid(dog_tail):
       dog_tail.rotation_degrees.x = -55.0 + sin(elapsed * 5.4) * 15.0
-    if is_instance_valid(dog_head):
-      dog_head.rotation_degrees.x = sin(elapsed * 1.15) * 2.4
     for i in dog_legs.size():
       if is_instance_valid(dog_legs[i]):
         dog_legs[i].rotation_degrees.z = 180.0 + sin(elapsed * 7.2 + float(i) * PI * 0.5) * 2.5
@@ -329,7 +326,6 @@ func _create_dog_body() -> void:
   head.position = Vector3(0,1.54,-1.08)
   head.material_override = _mat(Color("#F2F0E8"),0.80,0.0)
   dog_model.add_child(head)
-  dog_head = head
   _add_head_spot(Vector3(-0.36,1.78,-1.58),0.19)
   _add_head_spot(Vector3(0.38,1.68,-1.52),0.16)
   var muzzle := MeshInstance3D.new()
