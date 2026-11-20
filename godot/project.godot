@@ -10,11 +10,18 @@ window/size/viewport_height=1920
 window/size/window_width_override=540
 window/size/window_height_override=960
 window/handheld/orientation=1
+window/stretch/mode="canvas_items"
+window/stretch/aspect="expand"
+display/window/frame_pacing/android/enable_frame_pacing=false
 
 
 [rendering]
 renderer/rendering_method="gl_compatibility"
 renderer/rendering_method.mobile="gl_compatibility"
+# The current scene uses a single DirectionalLight3D and no OmniLight3D/SpotLight3D.
+# Keep the GLES3 shader variant within conservative mobile uniform budgets.
+rendering/limits/opengl/max_lights_per_object=1
+rendering/limits/opengl/max_renderable_lights=4
 textures/default_filters/use_nearest_mipmap_filter=false
 textures/vram_compression/import_etc2_astc=true
 environment/defaults/default_clear_color=Color(0.018,0.021,0.03,1)
