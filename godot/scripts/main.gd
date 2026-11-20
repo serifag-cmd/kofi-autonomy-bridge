@@ -190,7 +190,7 @@ func _build_world() -> void:
     route_points.append(Vector3(cos(a) * radius, 0.18, sin(a) * radius))
   _create_board_geometry()
   _create_world_center()
-  _build_world_decorations(0)
+  # Decorations are rebuilt from the selected world's visual identity in _refresh_world().
 
 func _create_board_geometry() -> void:
   var floor := MeshInstance3D.new()
@@ -773,6 +773,7 @@ func _set_tab(tab:String)->void:
   elif tab=="MISSIONS": _refresh_mission_panel()
 
 func _refresh_world()->void:
+  _build_world_decorations(int(g["world"]))
   _rebuild_world_buildings()
   var w=worlds[int(g["world"])]
   world_label.text="%s  •  WORLD %02d  •  %s"%[w["glyph"],int(g["world"])+1,w["name"]]
