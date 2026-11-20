@@ -4,14 +4,13 @@ on:
   push:
     branches:
       - main
-      - fix/dalma-android-visible-render-gate
   pull_request:
     branches:
       - main
   workflow_dispatch:
 
 concurrency:
-  group: everest-dalma-android-recovery-v2
+  group: everest-dalma-android-${{ github.ref }}
   cancel-in-progress: true
 
 permissions:
