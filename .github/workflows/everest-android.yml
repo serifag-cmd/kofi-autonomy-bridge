@@ -81,8 +81,8 @@ jobs:
           changed = []
           for path in list(root.rglob("*.gradle")) + list(root.rglob("*.gradle.kts")):
               source = path.read_text(encoding="utf-8")
-              updated = source.replace("mavenCentral()", mirror + "\\n        mavenCentral()")
-              updated = updated.replace("gradlePluginPortal()", mirror + "\\n        gradlePluginPortal()")
+              updated = source.replace("mavenCentral()", mirror + "\n        mavenCentral()")
+              updated = updated.replace("gradlePluginPortal()", mirror + "\n        gradlePluginPortal()")
               if updated != source:
                   path.write_text(updated, encoding="utf-8")
                   changed.append(str(path))
