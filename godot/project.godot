@@ -12,6 +12,7 @@ window/size/window_height_override=960
 window/handheld/orientation=1
 window/stretch/mode="canvas_items"
 window/stretch/aspect="expand"
+display/window/frame_pacing/android/enable_frame_pacing=false
 
 
 [rendering]
