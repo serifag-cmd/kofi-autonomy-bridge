@@ -160,8 +160,18 @@ jobs:
           printf '%s\n' "$BADGING"
           echo "=== APK MANIFEST ACTIVITY TREE ==="
           grep -n -A 20 -B 4 -E 'E: activity|intent.action.MAIN|intent.category.LAUNCHER|android:name' verified-output/manifest-tree.txt | head -160
+          # Godot exports the launcher intent on an exported activity-alias.
+          # Some aapt versions omit that alias from the launchable-activity summary.
+          if [ -z "$ACTIVITY" ] && \
+             grep -q 'com.godot.game.GodotAppLauncher' verified-output/manifest-tree.txt && \
+             grep -q 'android.intent.action.MAIN' verified-output/manifest-tree.txt && \
+             grep -q 'android.intent.category.LAUNCHER' verified-output/manifest-tree.txt && \
+             grep -q 'android:exported.*0xffffffff' verified-output/manifest-tree.txt; then
+            ACTIVITY="com.godot.game.GodotAppLauncher (exported activity-alias)"
+            echo "Launcher alias verified from AndroidManifest.xml"
+          fi
           if [ -z "$ACTIVITY" ]; then
-            echo "No launchable-activity entry found in APK badging; inspect manifest-tree.txt."
+            echo "No valid launcher activity or exported launcher alias found."
             exit 1
           fi
           SHA="$(sha256sum "$APK" | awk '{print $1}')"
