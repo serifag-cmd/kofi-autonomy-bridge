@@ -114,6 +114,26 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p verified-output
+          # Prefer Google's read-only Maven Central mirror to avoid transient 429s from repo.maven.apache.org.
+          mkdir -p "$GITHUB_WORKSPACE/.godot-cache/.gradle/init.d"
+          cat > "$GITHUB_WORKSPACE/.godot-cache/.gradle/init.d/10-central-mirror.gradle" <<'GRADLE'
+          allprojects {
+            repositories {
+              maven {
+                name = "GoogleMavenCentralMirror"
+                url = uri("https://maven-central.storage-download.googleapis.com/maven2/")
+              }
+            }
+            buildscript {
+              repositories {
+                maven {
+                  name = "GoogleMavenCentralMirrorBuildscript"
+                  url = uri("https://maven-central.storage-download.googleapis.com/maven2/")
+                }
+              }
+            }
+          }
+          GRADLE
           HOME="$GITHUB_WORKSPACE/.godot-cache" tools/godot --headless --path godot --export-debug "Android" "$GITHUB_WORKSPACE/verified-output/DALMA_Everest_Test_Funcional.apk"
           test -s verified-output/DALMA_Everest_Test_Funcional.apk
 
