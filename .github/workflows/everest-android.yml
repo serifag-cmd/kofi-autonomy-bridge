@@ -36,6 +36,14 @@ jobs:
           cache: gradle
           cache-dependency-path: godot/export_presets.cfg
 
+      - name: Cache pinned Godot toolchain downloads
+        uses: actions/cache@v4
+        with:
+          path: |
+            tools/godot.zip
+            tools/templates.tpz
+          key: godot-4.7.2-stable-linux-x86_64
+
       - name: Configure Android 16 SDK
         shell: bash
         run: |
@@ -49,12 +57,12 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p tools
-          curl -fL --retry 3 --retry-all-errors "https://github.com/godotengine/godot/releases/download/4.7.2-stable/Godot_v4.7.2-stable_linux.x86_64.zip" -o tools/godot.zip
+          if [ ! -s tools/godot.zip ]; then curl -fL --connect-timeout 30 --max-time 360 --retry 3 --retry-all-errors "https://github.com/godotengine/godot/releases/download/4.7.2-stable/Godot_v4.7.2-stable_linux.x86_64.zip" -o tools/godot.zip; fi
           unzip -q tools/godot.zip -d tools/godot-dist
           mv "tools/godot-dist/Godot_v4.7.2-stable_linux.x86_64" tools/godot
           chmod +x tools/godot
           mkdir -p "$GITHUB_WORKSPACE/.godot-cache/.local/share/godot/export_templates/4.7.2.stable"
-          curl -fL --retry 3 --retry-all-errors "https://github.com/godotengine/godot/releases/download/4.7.2-stable/Godot_v4.7.2-stable_export_templates.tpz" -o tools/templates.tpz
+          if [ ! -s tools/templates.tpz ]; then curl -fL --connect-timeout 30 --max-time 360 --retry 3 --retry-all-errors "https://github.com/godotengine/godot/releases/download/4.7.2-stable/Godot_v4.7.2-stable_export_templates.tpz" -o tools/templates.tpz; fi
           rm -rf tools/templates
           mkdir -p tools/templates
           unzip -q tools/templates.tpz -d tools/templates
