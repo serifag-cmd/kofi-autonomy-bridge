@@ -402,7 +402,7 @@ func _add_heart_mark() -> void:
     lobe.material_override = black
     heart.add_child(lobe)
   var point := MeshInstance3D.new()
-  var cone := ConeMesh.new()
+  var cone := CylinderMesh.new()
   cone.top_radius = 0.0
   cone.bottom_radius = 0.16
   cone.height = 0.24
