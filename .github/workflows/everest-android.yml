@@ -167,7 +167,7 @@ jobs:
              grep -q 'android.intent.action.MAIN' verified-output/manifest-tree.txt && \
              grep -q 'android.intent.category.LAUNCHER' verified-output/manifest-tree.txt && \
              grep -q 'android:exported.*0xffffffff' verified-output/manifest-tree.txt; then
-            ACTIVITY="com.godot.game.GodotAppLauncher (exported activity-alias)"
+            ACTIVITY="com.godot.game.GodotAppLauncher"
             echo "Launcher alias verified from AndroidManifest.xml"
           fi
           if [ -z "$ACTIVITY" ]; then
