@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - main
+  pull_request:
+    branches:
+      - main
   workflow_dispatch:
 
 concurrency:
@@ -243,8 +246,40 @@ jobs:
           adb -s "$SERIAL" exec-out screencap -p > dalma-runtime.png
           test -s dalma-runtime.png
 
+          # A live PID is not proof of a visible game. Reject blank/white render surfaces.
+          python3 -m venv .venv
+          .venv/bin/pip install --disable-pip-version-check --quiet Pillow
+          .venv/bin/python - <<'PY'
+          from PIL import Image
+          im = Image.open("dalma-runtime.png").convert("RGB")
+          w, h = im.size
+          crop = im.crop((int(w*0.03), int(h*0.08), int(w*0.97), int(h*0.92)))
+          pixels = list(crop.getdata())
+          nonwhite = sum(1 for r,g,b in pixels if max(r,g,b) < 238 or (max(r,g,b)-min(r,g,b)) > 12)
+          ratio = nonwhite / max(1, len(pixels))
+          colors = len(crop.resize((96, 160)).getcolors(20000) or [])
+          print(f"VISIBLE_RENDER_NONWHITE_RATIO={ratio:.4f}")
+          print(f"VISIBLE_RENDER_COLOR_COUNT={colors}")
+          if ratio < 0.12 or colors < 18:
+              raise SystemExit("VISIBLE_RENDER_GATE=FAIL: blank or near-white application surface")
+          print("VISIBLE_RENDER_GATE=PASS")
+          PY
+
           adb -s "$SERIAL" shell input tap 540 1620
           sleep 4
+          adb -s "$SERIAL" exec-out screencap -p > dalma-after-interaction.png
+          .venv/bin/python - <<'PY'
+          from PIL import Image, ImageChops
+          a = Image.open("dalma-runtime.png").convert("RGB").resize((270, 585))
+          b = Image.open("dalma-after-interaction.png").convert("RGB").resize((270, 585))
+          diff = ImageChops.difference(a, b)
+          changed = sum(1 for p in diff.getdata() if max(p) > 18)
+          ratio = changed / (270*585)
+          print(f"INTERACTION_FRAME_DELTA={ratio:.4f}")
+          if ratio < 0.0005:
+              raise SystemExit("INTERACTION_RENDER_GATE=FAIL: no visible response after tap")
+          print("INTERACTION_RENDER_GATE=PASS")
+          PY
           adb -s "$SERIAL" shell dumpsys gfxinfo "${{ steps.apk.outputs.package }}" > gfxinfo-after.txt
           adb -s "$SERIAL" logcat -d -t 1000 > logcat.txt
 
