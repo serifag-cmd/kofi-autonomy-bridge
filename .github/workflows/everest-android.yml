@@ -153,9 +153,17 @@ jobs:
           TARGET="$(printf '%s\n' "$BADGING" | grep -o "targetSdkVersion:'[^']*'" | head -1 || true)"
           ACTIVITY="$(printf '%s\n' "$BADGING" | sed -n "s/^launchable-activity: name='\\([^']*\\)'.*/\\1/p" | head -1)"
           test "$PACKAGE" = "com.opencacnlabs.dalmaadventure"
-          test -n "$ACTIVITY"
           mkdir -p verified-output
           printf '%s\n' "$BADGING" > verified-output/badging.txt
+          "$ANDROID_HOME/build-tools/36.0.0/aapt" dump xmltree "$APK" AndroidManifest.xml > verified-output/manifest-tree.txt
+          echo "=== APK BADGING ==="
+          printf '%s\n' "$BADGING"
+          echo "=== APK MANIFEST ACTIVITY TREE ==="
+          grep -n -A 20 -B 4 -E 'E: activity|intent.action.MAIN|intent.category.LAUNCHER|android:name' verified-output/manifest-tree.txt | head -160
+          if [ -z "$ACTIVITY" ]; then
+            echo "No launchable-activity entry found in APK badging; inspect manifest-tree.txt."
+            exit 1
+          fi
           SHA="$(sha256sum "$APK" | awk '{print $1}')"
           {
             echo "apk=$APK"
