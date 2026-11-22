@@ -629,7 +629,7 @@ func _build_ui() -> void:
 
 func _nav_button(label:String,glyph:String,parent:HBoxContainer)->void:
   var b:=Button.new()
-  b.text=glyph+"\\n"+label
+  b.text=glyph+"\n"+label
   b.custom_minimum_size=Vector2(196,116)
   b.add_theme_font_size_override("font_size",15)
   b.pressed.connect(func(): _set_tab(label))
@@ -973,7 +973,7 @@ func _refresh_ui()->void:
   var xp_pct:=clampf(float(g["xp"])/float(need),0.0,1.0)
   progress_bar.value=xp_pct*100.0
   level_label.text="LEVEL %d  •  %d XP TO NEXT  •  %d BUILDINGS"%[int(g["level"]),maxi(0,need-int(g["xp"])),_total_buildings()]
-  info_label.text="%s  %s\\n%s"%[w["glyph"],w["name"],w["lore"]]
+  info_label.text="%s  %s\n%s"%[w["glyph"],w["name"],w["lore"]]
   dice_label.text="⚂ %d   +   ⚄ %d   =   %d STEPS"%[dice_a,dice_b,dice_a+dice_b]
   roll_button.disabled=rolling or int(g["energy"])<=0
   roll_button.text="DALMA IS MOVING…" if rolling else ("ROLL DALMA" if int(g["energy"])>0 else "ENERGY EMPTY • MISSIONS")
@@ -1001,6 +1001,7 @@ func _roll()->void:
   _refresh_ui()
   await _animate_travel(from,to,steps)
   _land(to,raw_steps)
+  print("DALMA_ROLL_RESULT from=%d to=%d raw=%d pos=%d spins=%d energy=%d" % [from, to, raw_steps, int(g["pos"]), int(g["spins"]), int(g["energy"])])
   rolling=false
   _save()
   _refresh_ui()
@@ -1229,7 +1230,7 @@ func _raid_cinematic(success:bool,color:Color)->void:
   _spawn_burst(dog_root.global_position+Vector3(0,1.0,0),color if success else Color("#A85566"))
 
 func _card_cinematic(c:Dictionary)->void:
-  _show_overlay(str(c["name"]).to_upper(),"%s\\n%s\\n\\nPermanent gameplay bonus: %s"%[c["set"],c["rarity"],c["bonus"]],"RESULT")
+  _show_overlay(str(c["name"]).to_upper(),"%s\n%s\n\nPermanent gameplay bonus: %s"%[c["set"],c["rarity"],c["bonus"]],"RESULT")
   for _i in 9:
     _spawn_burst(camera.global_position+Vector3(rng.randf_range(-2,2),rng.randf_range(-1,2),-3),worlds[int(g["world"])]["color"])
 
@@ -1280,7 +1281,7 @@ func _refresh_build_panel()->void:
     var b=building_panel.get_node("Build%d"%i) as Button
     var level:=int(g["buildings"][int(g["world"])][i])
     var cost:=int(round(((int(w["threshold"])+1)*160+int(g["level"])*55+level*180)*(0.95 if _has_card("reef") else 1.0)))
-    b.text="%s\\nLEVEL %d/5\\n%s"%[w["buildings"][i],level,"MASTERED" if level>=5 else "BUILD • %s COINS"%_fmt(cost)]
+    b.text="%s\nLEVEL %d/5\n%s"%[w["buildings"][i],level,"MASTERED" if level>=5 else "BUILD • %s COINS"%_fmt(cost)]
     b.disabled=level>=5 or int(g["coins"])<cost
 
 func _refresh_raid_panel()->void:
@@ -1289,7 +1290,7 @@ func _refresh_raid_panel()->void:
     var b=raid_panel.get_node("Vault%d"%i) as Button
     var coins:=900+int(g["level"])*180+i*260
     var hard:=i%2==0
-    b.text="%s\\n%s DEFENSE\\n%s COINS\\n%s"%[names[i],"HARD" if hard else "OPEN",_fmt(coins),"SHIELD RAID" if hard and int(g["shields"])>0 else "RISK RAID"]
+    b.text="%s\n%s DEFENSE\n%s COINS\n%s"%[names[i],"HARD" if hard else "OPEN",_fmt(coins),"SHIELD RAID" if hard and int(g["shields"])>0 else "RISK RAID"]
 
 func _refresh_collection_panel()->void:
   var sub=collection_panel.get_node("Sub") as Label
@@ -1312,7 +1313,7 @@ func _refresh_mission_panel()->void:
     var progress:=int(g["mission_progress"][id])
     if i==4 and int(g["world"])>0: progress=1
     var b=mission_panel.get_node("Mission%d"%i) as Button
-    b.text="%s\\n%d/%d\\nREWARD  %s"%[names[i],mini(progress,goals[i]),goals[i],rewards[i]]
+    b.text="%s\n%d/%d\nREWARD  %s"%[names[i],mini(progress,goals[i]),goals[i],rewards[i]]
     b.disabled=id in g["claimed"]
 
 func _show_toast(text_value:String)->void:
