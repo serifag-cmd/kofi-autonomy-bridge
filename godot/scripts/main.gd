@@ -67,6 +67,8 @@ var camera: Camera3D
 var board_root: Node3D
 var dog_root: Node3D
 var dog_model: Node3D
+var dog_tail: MeshInstance3D
+var dog_legs: Array[MeshInstance3D] = []
 var fx_root: Node3D
 var ui: Control
 var info_label: Label
@@ -91,7 +93,7 @@ var building_nodes: Array[Node3D] = []
 var world_decorations: Array[Node3D] = []
 var world_ring: MeshInstance3D
 var world_core: MeshInstance3D
-var world_light: OmniLight3D
+var world_light: DirectionalLight3D
 var rolling := false
 var selected_tab := "BOARD"
 var dice_a := 2
@@ -124,6 +126,11 @@ func _process(delta: float) -> void:
   elapsed += delta
   if dog_model:
     dog_model.position.y = sin(elapsed * 2.1) * 0.045
+    if is_instance_valid(dog_tail):
+      dog_tail.rotation_degrees.x = -55.0 + sin(elapsed * 5.4) * 15.0
+    for i in dog_legs.size():
+      if is_instance_valid(dog_legs[i]):
+        dog_legs[i].rotation_degrees.z = 180.0 + sin(elapsed * 7.2 + float(i) * PI * 0.5) * 2.5
   if toast:
     toast.modulate.a = maxf(0.0, toast.modulate.a - delta * 0.35)
 
@@ -190,7 +197,7 @@ func _build_world() -> void:
     route_points.append(Vector3(cos(a) * radius, 0.18, sin(a) * radius))
   _create_board_geometry()
   _create_world_center()
-  _build_world_decorations(0)
+  # Decorations are rebuilt from the selected world's visual identity in _refresh_world().
 
 func _create_board_geometry() -> void:
   var floor := MeshInstance3D.new()
@@ -272,11 +279,14 @@ func _create_world_center() -> void:
 
 func _build_camera() -> void:
   camera = Camera3D.new()
+  camera.name = "DALMAWorldCamera"
   camera.position = Vector3(0,16.8,16.8)
-  camera.rotation_degrees = Vector3(-43,0,0)
   camera.fov = 51
-  camera.current = true
   add_child(camera)
+  camera.look_at(Vector3.ZERO, Vector3.UP)
+  camera.make_current()
+  assert(camera.is_inside_tree() and camera.is_current(), "DALMA world camera must be active before first frame")
+  print("DALMA_RENDER_CAMERA_ACTIVE=", camera.is_current())
 
 func _build_dog() -> void:
   dog_root = Node3D.new()
@@ -351,6 +361,8 @@ func _create_dog_body() -> void:
   tail.rotation_degrees = Vector3(-55,0,0)
   tail.material_override = _mat(Color("#EFEDE5"),0.80,0.0)
   dog_model.add_child(tail)
+  dog_tail = tail
+  _add_heart_mark()
 
 func _add_spot(pos:Vector3,r:float) -> void:
   var s := MeshInstance3D.new()
@@ -374,6 +386,52 @@ func _add_head_spot(pos:Vector3,r:float) -> void:
   s.material_override=_mat(Color("#18191C"),0.44,0.0)
   dog_model.add_child(s)
 
+func _add_heart_mark() -> void:
+  var heart := Node3D.new()
+  heart.position = Vector3(0.0,0.91,-1.015)
+  dog_model.add_child(heart)
+  var black := _mat(Color("#202126"),0.52,0.0)
+  for side in [-1.0,1.0]:
+    var lobe := MeshInstance3D.new()
+    var sphere := SphereMesh.new()
+    sphere.radius = 0.105
+    sphere.height = 0.15
+    lobe.mesh = sphere
+    lobe.position = Vector3(side*0.075,0.035,0.0)
+    lobe.scale = Vector3(1.0,1.0,0.30)
+    lobe.material_override = black
+    heart.add_child(lobe)
+  var point := MeshInstance3D.new()
+  var cone := CylinderMesh.new()
+  cone.top_radius = 0.0
+  cone.bottom_radius = 0.16
+  cone.height = 0.24
+  point.mesh = cone
+  point.position = Vector3(0.0,-0.105,0.0)
+  point.rotation_degrees.x = 180.0
+  point.scale.z = 0.30
+  point.material_override = black
+  heart.add_child(point)
+
+func _add_lightning_ear_mark(pos:Vector3,rot:float) -> void:
+  var patch := Node3D.new()
+  patch.position = pos + Vector3(-0.015,0.015,-0.145)
+  patch.rotation_degrees.z = rot
+  dog_model.add_child(patch)
+  for spec in [
+    {"p":Vector3(-0.015,0.15,0.0),"r":-22.0,"h":0.22},
+    {"p":Vector3(0.035,-0.015,0.0),"r":28.0,"h":0.24},
+    {"p":Vector3(-0.035,-0.18,0.0),"r":-22.0,"h":0.18}
+  ]:
+    var bolt := MeshInstance3D.new()
+    var mesh := BoxMesh.new()
+    mesh.size = Vector3(0.095,float(spec["h"]),0.035)
+    bolt.mesh = mesh
+    bolt.position = spec["p"]
+    bolt.rotation_degrees.z = float(spec["r"])
+    bolt.material_override = _mat(Color("#17191E"),0.52,0.0)
+    patch.add_child(bolt)
+
 func _add_eye(pos:Vector3) -> void:
   var s := MeshInstance3D.new()
   var m := SphereMesh.new()
@@ -392,8 +450,10 @@ func _add_ear(pos:Vector3,rot:float) -> void:
   s.mesh=m
   s.position=pos
   s.rotation_degrees=Vector3(0,0,rot)
-  s.material_override=_mat(Color("#25272D"),0.64,0.0)
+  s.material_override=_mat(Color("#F2F0E8"),0.72,0.0)
   dog_model.add_child(s)
+  if rot < 0.0:
+    _add_lightning_ear_mark(pos,rot)
 
 func _add_leg(pos:Vector3) -> void:
   var s := MeshInstance3D.new()
@@ -405,36 +465,30 @@ func _add_leg(pos:Vector3) -> void:
   s.rotation_degrees=Vector3(0,0,180)
   s.material_override=_mat(Color("#F1EFE8"),0.82,0.0)
   dog_model.add_child(s)
+  dog_legs.append(s)
 
 func _build_lighting() -> void:
+  # GLES3 mobile GPUs have a strict fragment-uniform budget. Keep one
+  # directional key and ambient fill; avoid extra omni lights, volumetric fog
+  # and glow passes that can exceed the OpenGL ES uniform-vector limit.
   var env:=WorldEnvironment.new()
   var e:=Environment.new()
   e.background_mode=Environment.BG_COLOR
   e.background_color=Color("#070A10")
   e.ambient_light_source=Environment.AMBIENT_SOURCE_COLOR
-  e.ambient_light_color=Color("#6D7484")
-  e.ambient_light_energy=0.58
+  e.ambient_light_color=Color("#8B91A0")
+  e.ambient_light_energy=0.82
   e.tonemap_mode=Environment.TONE_MAPPER_FILMIC
-  e.glow_enabled=true
-  e.glow_intensity=0.82
-  e.fog_enabled=true
-  e.fog_light_color=Color("#111824")
-  e.fog_light_energy=0.28
-  e.fog_density=0.007
+  e.glow_enabled=false
+  e.fog_enabled=false
   env.environment=e
   add_child(env)
-  var sun:=DirectionalLight3D.new()
-  sun.rotation_degrees=Vector3(-52,-28,0)
-  sun.light_color=Color("#FFF0C8")
-  sun.light_energy=1.45
-  sun.shadow_enabled=true
-  sun.directional_shadow_max_distance=65
-  add_child(sun)
-  world_light=OmniLight3D.new()
-  world_light.position=Vector3(0,5,0)
+  world_light=DirectionalLight3D.new()
+  world_light.name="DALMA_MobileKeyLight"
+  world_light.rotation_degrees=Vector3(-52,-28,0)
   world_light.light_color=worlds[0]["color"]
-  world_light.light_energy=5.2
-  world_light.omni_range=14
+  world_light.light_energy=1.8
+  world_light.shadow_enabled=false
   add_child(world_light)
 
 func _mat(color:Color,roughness:float,metallic:float)->StandardMaterial3D:
@@ -454,9 +508,17 @@ func _emissive_mat(color:Color,energy:float)->StandardMaterial3D:
   return m
 
 func _build_ui() -> void:
+  var hud_layer := CanvasLayer.new()
+  hud_layer.name = "DALMAHUDCanvas"
+  hud_layer.layer = 10
+  add_child(hud_layer)
+
   ui=Control.new()
+  ui.name = "DALMAHUD"
   ui.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-  add_child(ui)
+  hud_layer.add_child(ui)
+  assert(ui.is_inside_tree() and hud_layer.is_inside_tree(), "DALMA HUD must be inside a CanvasLayer")
+  print("DALMA_RENDER_HUD_CANVAS_ACTIVE=", ui.is_inside_tree())
 
   var top:=ColorRect.new()
   top.color=Color(0.035,0.04,0.06,0.92)
@@ -567,7 +629,7 @@ func _build_ui() -> void:
 
 func _nav_button(label:String,glyph:String,parent:HBoxContainer)->void:
   var b:=Button.new()
-  b.text=glyph+"\\n"+label
+  b.text=glyph+"\n"+label
   b.custom_minimum_size=Vector2(196,116)
   b.add_theme_font_size_override("font_size",15)
   b.pressed.connect(func(): _set_tab(label))
@@ -762,6 +824,7 @@ func _set_tab(tab:String)->void:
   elif tab=="MISSIONS": _refresh_mission_panel()
 
 func _refresh_world()->void:
+  _build_world_decorations(int(g["world"]))
   _rebuild_world_buildings()
   var w=worlds[int(g["world"])]
   world_label.text="%s  •  WORLD %02d  •  %s"%[w["glyph"],int(g["world"])+1,w["name"]]
@@ -910,7 +973,7 @@ func _refresh_ui()->void:
   var xp_pct:=clampf(float(g["xp"])/float(need),0.0,1.0)
   progress_bar.value=xp_pct*100.0
   level_label.text="LEVEL %d  •  %d XP TO NEXT  •  %d BUILDINGS"%[int(g["level"]),maxi(0,need-int(g["xp"])),_total_buildings()]
-  info_label.text="%s  %s\\n%s"%[w["glyph"],w["name"],w["lore"]]
+  info_label.text="%s  %s\n%s"%[w["glyph"],w["name"],w["lore"]]
   dice_label.text="⚂ %d   +   ⚄ %d   =   %d STEPS"%[dice_a,dice_b,dice_a+dice_b]
   roll_button.disabled=rolling or int(g["energy"])<=0
   roll_button.text="DALMA IS MOVING…" if rolling else ("ROLL DALMA" if int(g["energy"])>0 else "ENERGY EMPTY • MISSIONS")
@@ -938,6 +1001,7 @@ func _roll()->void:
   _refresh_ui()
   await _animate_travel(from,to,steps)
   _land(to,raw_steps)
+  print("DALMA_ROLL_RESULT from=%d to=%d raw=%d pos=%d spins=%d energy=%d" % [from, to, raw_steps, int(g["pos"]), int(g["spins"]), int(g["energy"])])
   rolling=false
   _save()
   _refresh_ui()
@@ -1166,7 +1230,7 @@ func _raid_cinematic(success:bool,color:Color)->void:
   _spawn_burst(dog_root.global_position+Vector3(0,1.0,0),color if success else Color("#A85566"))
 
 func _card_cinematic(c:Dictionary)->void:
-  _show_overlay(str(c["name"]).to_upper(),"%s\\n%s\\n\\nPermanent gameplay bonus: %s"%[c["set"],c["rarity"],c["bonus"]],"RESULT")
+  _show_overlay(str(c["name"]).to_upper(),"%s\n%s\n\nPermanent gameplay bonus: %s"%[c["set"],c["rarity"],c["bonus"]],"RESULT")
   for _i in 9:
     _spawn_burst(camera.global_position+Vector3(rng.randf_range(-2,2),rng.randf_range(-1,2),-3),worlds[int(g["world"])]["color"])
 
@@ -1217,7 +1281,7 @@ func _refresh_build_panel()->void:
     var b=building_panel.get_node("Build%d"%i) as Button
     var level:=int(g["buildings"][int(g["world"])][i])
     var cost:=int(round(((int(w["threshold"])+1)*160+int(g["level"])*55+level*180)*(0.95 if _has_card("reef") else 1.0)))
-    b.text="%s\\nLEVEL %d/5\\n%s"%[w["buildings"][i],level,"MASTERED" if level>=5 else "BUILD • %s COINS"%_fmt(cost)]
+    b.text="%s\nLEVEL %d/5\n%s"%[w["buildings"][i],level,"MASTERED" if level>=5 else "BUILD • %s COINS"%_fmt(cost)]
     b.disabled=level>=5 or int(g["coins"])<cost
 
 func _refresh_raid_panel()->void:
@@ -1226,7 +1290,7 @@ func _refresh_raid_panel()->void:
     var b=raid_panel.get_node("Vault%d"%i) as Button
     var coins:=900+int(g["level"])*180+i*260
     var hard:=i%2==0
-    b.text="%s\\n%s DEFENSE\\n%s COINS\\n%s"%[names[i],"HARD" if hard else "OPEN",_fmt(coins),"SHIELD RAID" if hard and int(g["shields"])>0 else "RISK RAID"]
+    b.text="%s\n%s DEFENSE\n%s COINS\n%s"%[names[i],"HARD" if hard else "OPEN",_fmt(coins),"SHIELD RAID" if hard and int(g["shields"])>0 else "RISK RAID"]
 
 func _refresh_collection_panel()->void:
   var sub=collection_panel.get_node("Sub") as Label
@@ -1249,7 +1313,7 @@ func _refresh_mission_panel()->void:
     var progress:=int(g["mission_progress"][id])
     if i==4 and int(g["world"])>0: progress=1
     var b=mission_panel.get_node("Mission%d"%i) as Button
-    b.text="%s\\n%d/%d\\nREWARD  %s"%[names[i],mini(progress,goals[i]),goals[i],rewards[i]]
+    b.text="%s\n%d/%d\nREWARD  %s"%[names[i],mini(progress,goals[i]),goals[i],rewards[i]]
     b.disabled=id in g["claimed"]
 
 func _show_toast(text_value:String)->void:

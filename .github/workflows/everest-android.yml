@@ -4,10 +4,13 @@ on:
   push:
     branches:
       - main
+  pull_request:
+    branches:
+      - main
   workflow_dispatch:
 
 concurrency:
-  group: everest-dalma-android-recovery-v2
+  group: everest-dalma-android-${{ github.ref }}
   cancel-in-progress: true
 
 permissions:
@@ -30,6 +33,16 @@ jobs:
         with:
           distribution: temurin
           java-version: "17"
+          cache: gradle
+          cache-dependency-path: godot/export_presets.cfg
+
+      - name: Cache pinned Godot toolchain downloads
+        uses: actions/cache@v4
+        with:
+          path: |
+            tools/godot.zip
+            tools/templates.tpz
+          key: godot-4.7.2-stable-linux-x86_64
 
       - name: Configure Android 16 SDK
         shell: bash
@@ -44,12 +57,12 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p tools
-          curl -fL --retry 3 --retry-all-errors "https://github.com/godotengine/godot/releases/download/4.7.2-stable/Godot_v4.7.2-stable_linux.x86_64.zip" -o tools/godot.zip
+          if [ ! -s tools/godot.zip ]; then curl -fL --connect-timeout 30 --max-time 360 --retry 3 --retry-all-errors "https://github.com/godotengine/godot/releases/download/4.7.2-stable/Godot_v4.7.2-stable_linux.x86_64.zip" -o tools/godot.zip; fi
           unzip -q tools/godot.zip -d tools/godot-dist
           mv "tools/godot-dist/Godot_v4.7.2-stable_linux.x86_64" tools/godot
           chmod +x tools/godot
           mkdir -p "$GITHUB_WORKSPACE/.godot-cache/.local/share/godot/export_templates/4.7.2.stable"
-          curl -fL --retry 3 --retry-all-errors "https://github.com/godotengine/godot/releases/download/4.7.2-stable/Godot_v4.7.2-stable_export_templates.tpz" -o tools/templates.tpz
+          if [ ! -s tools/templates.tpz ]; then curl -fL --connect-timeout 30 --max-time 360 --retry 3 --retry-all-errors "https://github.com/godotengine/godot/releases/download/4.7.2-stable/Godot_v4.7.2-stable_export_templates.tpz" -o tools/templates.tpz; fi
           rm -rf tools/templates
           mkdir -p tools/templates
           unzip -q tools/templates.tpz -d tools/templates
@@ -68,6 +81,21 @@ jobs:
           test "$(cat godot/android/.build_version)" = "4.7.2.stable"
           touch godot/android/build/.gdignore
           test -f godot/android/build/build.gradle || test -f godot/android/build/settings.gradle
+          # Prefer Google's GCS mirror of Maven Central; retain official repositories as fallback.
+          python3 - <<'PY'
+          from pathlib import Path
+          mirror = 'maven { url "https://maven-central.storage-download.googleapis.com/maven2/" }'
+          root = Path("godot/android/build")
+          changed = []
+          for path in list(root.rglob("*.gradle")) + list(root.rglob("*.gradle.kts")):
+              source = path.read_text(encoding="utf-8")
+              updated = source.replace("mavenCentral()", mirror + "\n        mavenCentral()")
+              updated = updated.replace("gradlePluginPortal()", mirror + "\n        gradlePluginPortal()")
+              if updated != source:
+                  path.write_text(updated, encoding="utf-8")
+                  changed.append(str(path))
+          print("Maven Central GCS mirror added to:", changed)
+          PY
           printf "Godot Gradle template installed at godot/android/build\n"
           tools/godot --version
 
@@ -94,6 +122,26 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p verified-output
+          # Prefer Google's read-only Maven Central mirror to avoid transient 429s from repo.maven.apache.org.
+          mkdir -p "$GITHUB_WORKSPACE/.godot-cache/.gradle/init.d"
+          cat > "$GITHUB_WORKSPACE/.godot-cache/.gradle/init.d/10-central-mirror.gradle" <<'GRADLE'
+          allprojects {
+            repositories {
+              maven {
+                name = "GoogleMavenCentralMirror"
+                url = uri("https://maven-central.storage-download.googleapis.com/maven2/")
+              }
+            }
+            buildscript {
+              repositories {
+                maven {
+                  name = "GoogleMavenCentralMirrorBuildscript"
+                  url = uri("https://maven-central.storage-download.googleapis.com/maven2/")
+                }
+              }
+            }
+          }
+          GRADLE
           HOME="$GITHUB_WORKSPACE/.godot-cache" tools/godot --headless --path godot --export-debug "Android" "$GITHUB_WORKSPACE/verified-output/DALMA_Everest_Test_Funcional.apk"
           test -s verified-output/DALMA_Everest_Test_Funcional.apk
 
@@ -111,18 +159,41 @@ jobs:
           PACKAGE="$(printf '%s\n' "$BADGING" | grep -o "package: name='[^']*'" | head -1 | cut -d"'" -f2)"
           VERSION="$(printf '%s\n' "$BADGING" | grep -o "versionCode='[^']*' versionName='[^']*'" | head -1)"
           TARGET="$(printf '%s\n' "$BADGING" | grep -o "targetSdkVersion:'[^']*'" | head -1 || true)"
+          ACTIVITY="$(printf '%s\n' "$BADGING" | sed -n "s/^launchable-activity: name='\\([^']*\\)'.*/\\1/p" | head -1)"
           test "$PACKAGE" = "com.opencacnlabs.dalmaadventure"
           mkdir -p verified-output
+          printf '%s\n' "$BADGING" > verified-output/badging.txt
+          "$ANDROID_HOME/build-tools/36.0.0/aapt" dump xmltree "$APK" AndroidManifest.xml > verified-output/manifest-tree.txt
+          echo "=== APK BADGING ==="
+          printf '%s\n' "$BADGING"
+          echo "=== APK MANIFEST ACTIVITY TREE ==="
+          grep -n -A 20 -B 4 -E 'E: activity|intent.action.MAIN|intent.category.LAUNCHER|android:name' verified-output/manifest-tree.txt | head -160
+          # Godot exports the launcher intent on an exported activity-alias.
+          # Some aapt versions omit that alias from the launchable-activity summary.
+          if [ -z "$ACTIVITY" ] && \
+             grep -q 'com.godot.game.GodotAppLauncher' verified-output/manifest-tree.txt && \
+             grep -q 'android.intent.action.MAIN' verified-output/manifest-tree.txt && \
+             grep -q 'android.intent.category.LAUNCHER' verified-output/manifest-tree.txt && \
+             grep -q 'android:exported.*0xffffffff' verified-output/manifest-tree.txt; then
+            ACTIVITY="com.godot.game.GodotAppLauncher"
+            echo "Launcher alias verified from AndroidManifest.xml"
+          fi
+          if [ -z "$ACTIVITY" ]; then
+            echo "No valid launcher activity or exported launcher alias found."
+            exit 1
+          fi
           SHA="$(sha256sum "$APK" | awk '{print $1}')"
           {
             echo "apk=$APK"
             echo "bytes=$SIZE"
             echo "sha256=$SHA"
             echo "package=$PACKAGE"
+            echo "activity=$ACTIVITY"
             echo "version=$VERSION"
             echo "target=$TARGET"
           } > verified-output/verification.txt
           echo "package=$PACKAGE" >> "$GITHUB_OUTPUT"
+          echo "activity=$ACTIVITY" >> "$GITHUB_OUTPUT"
 
       - name: Enable KVM for Android emulator
         shell: bash
@@ -157,7 +228,7 @@ jobs:
           adb start-server
 
           "$EMULATOR" -avd everest-ci -port 5556 -no-window -no-audio -no-boot-anim \
-            -gpu swiftshader_indirect -no-snapshot -wipe-data -no-metrics > emulator.log 2>&1 &
+            -gpu software -no-snapshot -wipe-data -no-metrics > emulator.log 2>&1 &
           EMULATOR_PID=$!
 
           cleanup() {
@@ -210,21 +281,16 @@ jobs:
 
           timeout 180 adb -s "$SERIAL" install -r verified-output/DALMA_Everest_Test_Funcional.apk
 
-          LAUNCHED=0
-          for i in $(seq 1 10); do
-            if adb -s "$SERIAL" shell monkey -p "${{ steps.apk.outputs.package }}" 1 >/dev/null 2>&1; then
-              LAUNCHED=1
-              break
-            fi
-            adb kill-server || true
-            adb start-server
-            sleep 3
-          done
-          test "$LAUNCHED" = "1"
+          PACKAGE="${{ steps.apk.outputs.package }}"
+          ACTIVITY="${{ steps.apk.outputs.activity }}"
+          adb -s "$SERIAL" logcat -c
+          adb -s "$SERIAL" shell am force-stop "$PACKAGE" || true
+          adb -s "$SERIAL" shell am start -W -n "$PACKAGE/$ACTIVITY" 2>&1 | tee activity-launch.txt
+          grep -q "Status: ok" activity-launch.txt
 
           APP_UP=0
           for i in $(seq 1 45); do
-            PID="$(adb -s "$SERIAL" shell pidof "${{ steps.apk.outputs.package }}" 2>/dev/null | tr -d '\r' || true)"
+            PID="$(adb -s "$SERIAL" shell pidof "$PACKAGE" 2>/dev/null | tr -d '\r' || true)"
             if [ -n "$PID" ]; then
               APP_UP=1
               break
@@ -234,21 +300,124 @@ jobs:
           test "$APP_UP" = "1"
 
           sleep 60
-          # Android immersive-mode education overlay can appear on a fresh emulator; dismiss it before capturing runtime evidence.
-          adb -s "$SERIAL" shell input tap 710 507 || true
+          # Capture diagnostics before visual assertions, including resumed activity and Godot logs.
+          adb -s "$SERIAL" shell dumpsys activity activities > activity-state.txt
+          adb -s "$SERIAL" shell dumpsys window > window-state.txt
+          adb -s "$SERIAL" shell dumpsys SurfaceFlinger --list > surface-list.txt || true
+          adb -s "$SERIAL" shell ps -A | grep "$PACKAGE" > process-list.txt || true
+          adb -s "$SERIAL" logcat -d -v threadtime > logcat.txt
+          grep -q "$PACKAGE" activity-state.txt
+          # Capture the untouched board before the primary action; do not send an arbitrary coordinate tap.
           sleep 3
 
-          adb -s "$SERIAL" shell dumpsys window windows | grep -E "mCurrentFocus|mFocusedApp" > window-focus.txt || true
-          adb -s "$SERIAL" shell dumpsys gfxinfo "${{ steps.apk.outputs.package }}" > gfxinfo.txt
+          adb -s "$SERIAL" shell dumpsys gfxinfo "$PACKAGE" > gfxinfo.txt
           adb -s "$SERIAL" exec-out screencap -p > dalma-runtime.png
           test -s dalma-runtime.png
 
-          adb -s "$SERIAL" shell input tap 540 1620
-          sleep 4
-          adb -s "$SERIAL" shell dumpsys gfxinfo "${{ steps.apk.outputs.package }}" > gfxinfo-after.txt
+          # A live PID is not proof of a visible game. Reject blank/white render surfaces.
+          python3 -m venv .venv
+          .venv/bin/pip install --disable-pip-version-check --quiet Pillow
+          .venv/bin/python - <<'PY'
+          from PIL import Image
+          im = Image.open("dalma-runtime.png").convert("RGB")
+          w, h = im.size
+          crop = im.crop((int(w*0.03), int(h*0.08), int(w*0.97), int(h*0.92)))
+          pixels = list(crop.getdata())
+          nonwhite = sum(1 for r,g,b in pixels if max(r,g,b) < 238 or (max(r,g,b)-min(r,g,b)) > 12)
+          ratio = nonwhite / max(1, len(pixels))
+          colors = len(crop.resize((96, 160)).getcolors(20000) or [])
+          print(f"VISIBLE_RENDER_NONWHITE_RATIO={ratio:.4f}")
+          print(f"VISIBLE_RENDER_COLOR_COUNT={colors}")
+          if ratio < 0.12 or colors < 18:
+              raise SystemExit("VISIBLE_RENDER_GATE=FAIL: blank or near-white application surface")
+          print("VISIBLE_RENDER_GATE=PASS")
+          PY
+
+          DISPLAY_SIZE="$(adb -s "$SERIAL" shell wm size | awk -F': ' '/Physical size/ {print $2; exit}' | tr -d '\r')"
+          WIDTH="${DISPLAY_SIZE%x*}"
+          HEIGHT="${DISPLAY_SIZE#*x}"
+          if [[ ! "$WIDTH" =~ ^[0-9]+$ || ! "$HEIGHT" =~ ^[0-9]+$ ]]; then
+            echo "Could not parse emulator display size: $DISPLAY_SIZE"
+            exit 1
+          fi
+          # Godot positions ROLL DALMA at the horizontal center and about 75% of screen height.
+          ROLL_X=$((WIDTH / 2))
+          ROLL_Y=$((HEIGHT * 75 / 100))
+          echo "DALMA_ROLL_TAP=$ROLL_X,$ROLL_Y display=$DISPLAY_SIZE"
+          # Use the debug APK's app-private user:// save as the semantic baseline.
+          # Godot print() output is not guaranteed to be forwarded to Android logcat.
+          SAVE_REL=""
+          for i in $(seq 1 15); do
+            SAVE_REL="$(adb -s "$SERIAL" shell run-as "$PACKAGE" sh -c 'find . -type f -name dalma_adventure.json -print -quit' 2>/dev/null | tr -d '\r' || true)"
+            if [ -n "$SAVE_REL" ]; then break; fi
+            sleep 1
+          done
+          if [ -z "$SAVE_REL" ]; then
+            echo "SEMANTIC_INTERACTION_GATE=FAIL: app-private DALMA save not found"
+            adb -s "$SERIAL" shell run-as "$PACKAGE" sh -c 'find files -maxdepth 6 -type f -print' > save-files.txt 2>&1 || true
+            exit 1
+          fi
+          adb -s "$SERIAL" shell run-as "$PACKAGE" cat "$SAVE_REL" | tr -d '\r' > save-before.json
+          test -s save-before.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          state = json.loads(Path("save-before.json").read_text(encoding="utf-8"))
+          for key in ("pos", "spins", "energy"):
+              if not isinstance(state.get(key), int):
+                  raise SystemExit(f"Invalid pre-action save field: {key}")
+          print(f"SEMANTIC_BASELINE pos={state['pos']} spins={state['spins']} energy={state['energy']}")
+          PY
+          adb -s "$SERIAL" shell input tap "$ROLL_X" "$ROLL_Y"
+          # Poll persisted game state instead of relying on Godot print() lines in logcat.
+          # A completed roll must advance both the board position and the persistent spin counter.
+          STATE_READY=0
+          for i in $(seq 1 30); do
+            adb -s "$SERIAL" shell run-as "$PACKAGE" cat "$SAVE_REL" | tr -d '\r' > save-after.json 2>/dev/null || true
+            if python3 - <<'PY'
+          import json
+          from pathlib import Path
+          try:
+              before = json.loads(Path("save-before.json").read_text(encoding="utf-8"))
+              after = json.loads(Path("save-after.json").read_text(encoding="utf-8"))
+          except Exception:
+              raise SystemExit(1)
+          if after.get("spins") != before.get("spins", -1) + 1 or after.get("pos") == before.get("pos"):
+              raise SystemExit(1)
+          print(f"SEMANTIC_INTERACTION_GATE=PASS from={before['pos']} to={after['pos']} spins={after['spins']} energy={after['energy']}")
+          PY
+            then
+              STATE_READY=1
+              break
+            fi
+            sleep 1
+          done
+          if [ "$STATE_READY" != "1" ]; then
+            echo "SEMANTIC_INTERACTION_GATE=FAIL: no completed persisted roll within 30 seconds"
+            echo "=== SAVE BEFORE ==="
+            cat save-before.json
+            echo "=== SAVE AFTER ==="
+            cat save-after.json || true
+            exit 1
+          fi
+
+          adb -s "$SERIAL" exec-out screencap -p > dalma-after-interaction.png
+          .venv/bin/python - <<'PY'
+          from PIL import Image, ImageChops
+          a = Image.open("dalma-runtime.png").convert("RGB").resize((270, 585))
+          b = Image.open("dalma-after-interaction.png").convert("RGB").resize((270, 585))
+          diff = ImageChops.difference(a, b)
+          changed = sum(1 for p in diff.getdata() if max(p) > 18)
+          ratio = changed / (270*585)
+          print(f"INTERACTION_FRAME_DELTA={ratio:.4f}")
+          if ratio < 0.0005:
+              raise SystemExit("INTERACTION_RENDER_GATE=FAIL: no visible response after completed roll")
+          print("INTERACTION_RENDER_GATE=PASS")
+          PY
+          adb -s "$SERIAL" shell dumpsys gfxinfo "$PACKAGE" > gfxinfo-after.txt
           adb -s "$SERIAL" logcat -d -t 1000 > logcat.txt
 
-          if grep -Eq "FATAL EXCEPTION|AndroidRuntime: FATAL" logcat.txt; then
+          if grep -Eq "FATAL EXCEPTION|AndroidRuntime: FATAL|SCRIPT ERROR|Parse Error|Couldn't present to Vulkan queue|GL_MAX_FRAGMENT_UNIFORM_VECTORS" logcat.txt; then
             echo "Runtime crash detected"
             exit 1
           fi
@@ -283,5 +452,11 @@ jobs:
             gfxinfo-after.txt
             logcat.txt
             dalma-runtime.png
+            dalma-after-interaction.png
+            activity-launch.txt
+            activity-state.txt
+            window-state.txt
+            surface-list.txt
+            process-list.txt
           if-no-files-found: warn
           retention-days: 14
