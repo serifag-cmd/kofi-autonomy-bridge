@@ -351,7 +351,20 @@ jobs:
           adb -s "$SERIAL" shell dumpsys gfxinfo "${{ steps.apk.outputs.package }}" > gfxinfo-after.txt
           adb -s "$SERIAL" logcat -d -t 1000 > logcat.txt
 
-          if grep -Eq "FATAL EXCEPTION|AndroidRuntime: FATAL" logcat.txt; then
+          python3 - <<'PY'
+          import re
+          from pathlib import Path
+          log = Path("logcat.txt").read_text(encoding="utf-8", errors="replace")
+          match = re.search(r"DALMA_ROLL_RESULT from=(\d+) to=(\d+) raw=(\d+) pos=(\d+) spins=(\d+) energy=(\d+)", log)
+          if not match:
+              raise SystemExit("SEMANTIC_INTERACTION_GATE=FAIL: completed roll state not found")
+          source, destination, rolled, position, spins, energy = map(int, match.groups())
+          if source == destination or position != destination or spins < 1:
+              raise SystemExit(f"SEMANTIC_INTERACTION_GATE=FAIL: {match.group(0)}")
+          print(f"SEMANTIC_INTERACTION_GATE=PASS from={source} to={destination} roll={rolled} spins={spins} energy={energy}")
+          PY
+
+          if grep -Eq "FATAL EXCEPTION|AndroidRuntime: FATAL|SCRIPT ERROR|Parse Error|Couldn't present to Vulkan queue|GL_MAX_FRAGMENT_UNIFORM_VECTORS" logcat.txt; then
             echo "Runtime crash detected"
             exit 1
           fi
@@ -386,5 +399,11 @@ jobs:
             gfxinfo-after.txt
             logcat.txt
             dalma-runtime.png
+            dalma-after-interaction.png
+            activity-launch.txt
+            activity-state.txt
+            window-state.txt
+            surface-list.txt
+            process-list.txt
           if-no-files-found: warn
           retention-days: 14
