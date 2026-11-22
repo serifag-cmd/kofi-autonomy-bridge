@@ -307,7 +307,7 @@ jobs:
           adb -s "$SERIAL" shell ps -A | grep "$PACKAGE" > process-list.txt || true
           adb -s "$SERIAL" logcat -d -v threadtime > logcat.txt
           grep -q "$PACKAGE" activity-state.txt
-          adb -s "$SERIAL" shell input tap 710 507 || true
+          # Capture the untouched board before the primary action; do not send an arbitrary coordinate tap.
           sleep 3
 
           adb -s "$SERIAL" shell dumpsys gfxinfo "$PACKAGE" > gfxinfo.txt
@@ -333,7 +333,18 @@ jobs:
           print("VISIBLE_RENDER_GATE=PASS")
           PY
 
-          adb -s "$SERIAL" shell input tap 540 1620
+          DISPLAY_SIZE="$(adb -s "$SERIAL" shell wm size | awk -F': ' '/Physical size/ {print $2; exit}' | tr -d '\r')"
+WIDTH="${DISPLAY_SIZE%x*}"
+HEIGHT="${DISPLAY_SIZE#*x}"
+if [[ ! "$WIDTH" =~ ^[0-9]+$ || ! "$HEIGHT" =~ ^[0-9]+$ ]]; then
+  echo "Could not parse emulator display size: $DISPLAY_SIZE"
+  exit 1
+fi
+# Godot positions ROLL DALMA at the horizontal center and about 75% of screen height.
+ROLL_X=$((WIDTH / 2))
+ROLL_Y=$((HEIGHT * 75 / 100))
+echo "DALMA_ROLL_TAP=$ROLL_X,$ROLL_Y display=$DISPLAY_SIZE"
+adb -s "$SERIAL" shell input tap "$ROLL_X" "$ROLL_Y"
           sleep 4
           adb -s "$SERIAL" exec-out screencap -p > dalma-after-interaction.png
           .venv/bin/python - <<'PY'
