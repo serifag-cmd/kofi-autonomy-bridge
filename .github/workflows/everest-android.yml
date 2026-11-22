@@ -344,8 +344,63 @@ jobs:
           ROLL_X=$((WIDTH / 2))
           ROLL_Y=$((HEIGHT * 75 / 100))
           echo "DALMA_ROLL_TAP=$ROLL_X,$ROLL_Y display=$DISPLAY_SIZE"
+          # Use the debug APK's app-private user:// save as the semantic baseline.
+          # Godot print() output is not guaranteed to be forwarded to Android logcat.
+          SAVE_REL=""
+          for i in $(seq 1 15); do
+            SAVE_REL="$(adb -s "$SERIAL" shell run-as "$PACKAGE" sh -c 'find . -type f -name dalma_adventure.json -print -quit' 2>/dev/null | tr -d '\r' || true)"
+            if [ -n "$SAVE_REL" ]; then break; fi
+            sleep 1
+          done
+          if [ -z "$SAVE_REL" ]; then
+            echo "SEMANTIC_INTERACTION_GATE=FAIL: app-private DALMA save not found"
+            adb -s "$SERIAL" shell run-as "$PACKAGE" sh -c 'find files -maxdepth 6 -type f -print' > save-files.txt 2>&1 || true
+            exit 1
+          fi
+          adb -s "$SERIAL" shell run-as "$PACKAGE" cat "$SAVE_REL" | tr -d '\r' > save-before.json
+          test -s save-before.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          state = json.loads(Path("save-before.json").read_text(encoding="utf-8"))
+          for key in ("pos", "spins", "energy"):
+              if not isinstance(state.get(key), int):
+                  raise SystemExit(f"Invalid pre-action save field: {key}")
+          print(f"SEMANTIC_BASELINE pos={state['pos']} spins={state['spins']} energy={state['energy']}")
+          PY
           adb -s "$SERIAL" shell input tap "$ROLL_X" "$ROLL_Y"
-          sleep 4
+          # Poll persisted game state instead of relying on Godot print() lines in logcat.
+          # A completed roll must advance both the board position and the persistent spin counter.
+          STATE_READY=0
+          for i in $(seq 1 30); do
+            adb -s "$SERIAL" shell run-as "$PACKAGE" cat "$SAVE_REL" | tr -d '\r' > save-after.json 2>/dev/null || true
+            if python3 - <<'PY'
+          import json
+          from pathlib import Path
+          try:
+              before = json.loads(Path("save-before.json").read_text(encoding="utf-8"))
+              after = json.loads(Path("save-after.json").read_text(encoding="utf-8"))
+          except Exception:
+              raise SystemExit(1)
+          if after.get("spins") != before.get("spins", -1) + 1 or after.get("pos") == before.get("pos"):
+              raise SystemExit(1)
+          print(f"SEMANTIC_INTERACTION_GATE=PASS from={before['pos']} to={after['pos']} spins={after['spins']} energy={after['energy']}")
+          PY
+            then
+              STATE_READY=1
+              break
+            fi
+            sleep 1
+          done
+          if [ "$STATE_READY" != "1" ]; then
+            echo "SEMANTIC_INTERACTION_GATE=FAIL: no completed persisted roll within 30 seconds"
+            echo "=== SAVE BEFORE ==="
+            cat save-before.json
+            echo "=== SAVE AFTER ==="
+            cat save-after.json || true
+            exit 1
+          fi
+
           adb -s "$SERIAL" exec-out screencap -p > dalma-after-interaction.png
           .venv/bin/python - <<'PY'
           from PIL import Image, ImageChops
@@ -356,24 +411,11 @@ jobs:
           ratio = changed / (270*585)
           print(f"INTERACTION_FRAME_DELTA={ratio:.4f}")
           if ratio < 0.0005:
-              raise SystemExit("INTERACTION_RENDER_GATE=FAIL: no visible response after tap")
+              raise SystemExit("INTERACTION_RENDER_GATE=FAIL: no visible response after completed roll")
           print("INTERACTION_RENDER_GATE=PASS")
           PY
-          adb -s "$SERIAL" shell dumpsys gfxinfo "${{ steps.apk.outputs.package }}" > gfxinfo-after.txt
+          adb -s "$SERIAL" shell dumpsys gfxinfo "$PACKAGE" > gfxinfo-after.txt
           adb -s "$SERIAL" logcat -d -t 1000 > logcat.txt
-
-          python3 - <<'PY'
-          import re
-          from pathlib import Path
-          log = Path("logcat.txt").read_text(encoding="utf-8", errors="replace")
-          match = re.search(r"DALMA_ROLL_RESULT from=(\d+) to=(\d+) raw=(\d+) pos=(\d+) spins=(\d+) energy=(\d+)", log)
-          if not match:
-              raise SystemExit("SEMANTIC_INTERACTION_GATE=FAIL: completed roll state not found")
-          source, destination, rolled, position, spins, energy = map(int, match.groups())
-          if source == destination or position != destination or spins < 1:
-              raise SystemExit(f"SEMANTIC_INTERACTION_GATE=FAIL: {match.group(0)}")
-          print(f"SEMANTIC_INTERACTION_GATE=PASS from={source} to={destination} roll={rolled} spins={spins} energy={energy}")
-          PY
 
           if grep -Eq "FATAL EXCEPTION|AndroidRuntime: FATAL|SCRIPT ERROR|Parse Error|Couldn't present to Vulkan queue|GL_MAX_FRAGMENT_UNIFORM_VECTORS" logcat.txt; then
             echo "Runtime crash detected"
